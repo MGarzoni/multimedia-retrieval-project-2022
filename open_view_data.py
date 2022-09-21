@@ -12,10 +12,13 @@ def open_and_display_mesh(db_path):
     rand_cat = random.choice(categories)
     entities = os.listdir(db_path + rand_cat)
     rand_ent = random.choice(entities)
+    
 
     # consider only 3D mesh file types
     if rand_ent.endswith(('.ply', '.obj', '.off')):
         mesh = trimesh.load(os.path.join(db_path, rand_cat, rand_ent))
         return mesh.show()
+    else:
+        print("File is not a 3D mesh")
     
 open_and_display_mesh(PSB_PATH)
