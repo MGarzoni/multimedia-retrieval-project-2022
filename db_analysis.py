@@ -15,7 +15,7 @@ def inspect_db(db_path):
 
     # for each category (folder=dirname) create an empty list as value associated with that category
     for dirname in os.listdir(db_path):
-        if dirname != ".DS_Store": #this irrelevant filename shows up on some machines
+        if dirname != ".DS_Store": # this irrelevant filename shows up on some machines
             db_info[dirname] = {}
     
             # for each object (filename)
@@ -27,25 +27,23 @@ def inspect_db(db_path):
                     mesh = trimesh.load(os.path.join(db_path, dirname, filename))
     
                     # save a dict containing all the desired attributes
-                    db_info[dirname][filename].update({'class':dirname, 'num_faces': len(mesh.faces), 'num_vertices': len(mesh.vertices), 'faces_type': 'triangles', 'axis_aligned_bounding_box': mesh.bounding_box.extents, 'path':os.path.join(db_path, dirname, filename)})
+                    db_info[dirname][filename].update({'class': dirname, 'num_faces': len(mesh.faces), 'num_vertices': len(mesh.vertices),
+                                                        'faces_type': 'triangles', 'axis_aligned_bounding_box': mesh.bounding_box.extents,
+                                                        'path':os.path.join(db_path, dirname, filename)})
 
     return db_info
 
 out_dict = inspect_db(PSB_PATH)
 
-# # save to csv
-# output = pd.DataFrame.from_dict(out_dict, orient='columns')
-# output.to_csv('psb_analysis.csv')
-
-#create csv with class as ATTRIBUTE rather than column
-out_dict_2 = {} #this dictionary will have filename as key, and dictionary of attributes as value
+# create csv with class as ATTRIBUTE rather than column
+out_dict_2 = {} # this dictionary will have filename as key, and dictionary of attributes as value
 
 for dirname, files in out_dict.items():
     for file in files:
         out_dict_2[file] = out_dict[dirname][file]
         
-#output dictionary to csv
-output2 = pd.DataFrame.from_dict(out_dict_2, orient = 'index')
+# output dictionary to csv
+output2 = pd.DataFrame.from_dict(out_dict_2, orient='index')
 output2 = output2.rename_axis('filename').reset_index()
 output2.to_csv('psb_analysis.csv')
 

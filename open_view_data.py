@@ -10,15 +10,13 @@ PSB_PATH = "./psb-labeled-db/"
 def open_and_display_mesh(db_path):
     categories = os.listdir(db_path)
     rand_cat = random.choice(categories)
-    entities = os.listdir(db_path + rand_cat)
-    rand_ent = random.choice(entities)
-    
 
-    # consider only 3D mesh file types
-    if rand_ent.endswith(('.ply', '.obj', '.off')):
-        mesh = trimesh.load(os.path.join(db_path, rand_cat, rand_ent))
-        return mesh.show(viewer = 'gl') #may require pyglet package
-    else:
-        print("File is not a 3D mesh")
+    # consider only 3D mesh file types and pick a random entity
+    entities = [ent for ent in os.listdir(db_path + rand_cat) if ent.endswith(('.ply', '.obj', '.off'))]
+    rand_ent = random.choice(entities)
+
+    # load and display mesh
+    mesh = trimesh.load(os.path.join(db_path, rand_cat, rand_ent))
+    return mesh.show()
     
 open_and_display_mesh(PSB_PATH)

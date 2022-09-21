@@ -20,40 +20,37 @@ analysis = './psb_analysis.csv'
 analysis_in = pd.read_csv(analysis)
 
 # inspect dataframe
-analysis_in.describe()
-analysis_in.info()
+print(analysis_in.describe())
+print(analysis_in.info())
 
-# plotting histogram of integer fields in dataframe
-analysis_in.hist()
-
-#plotting distribution of categories
+# plotting distribution of categories
 cat_df = pd.DataFrame.from_dict(Counter(analysis_in['class']), orient='index', columns=['Total count'])
 cat_df.plot.bar()
 
-#find an outlier with very few faces
+# find an outlier with very few faces
 
-#random filename with fewer than __ faces
+# random filename with fewer than __ faces
 few_faces_path = random.choice(list(analysis_in[analysis_in['num_faces'] < 3000].path))
+print(f"Random 3D entity with fewer than 3000 faces: {few_faces_path}")
 
-#random filename with more than __ faces
+# random filename with more than __ faces
 many_faces_path = random.choice(list(analysis_in[analysis_in['num_faces'] > 40000].path))
+print(f"Random 3D entity with more than 4000 faces: {many_faces_path}")
 
-
-
-def save_image_of_path(path,tag = None):
+def save_image_of_path(path, tag=None):
     
-    #generate png
+    # generate png
     scene = trimesh.load(path).scene()
     png = scene.save_image()
     
-    #generate filename
+    # generate filename
     file_name = os.path.basename(path)
     
-    if tag != None: #add tag to filename if there is one
+    if tag != None: # add tag to filename if there is one
         file_name = file_name + "_" + tag
     
     with open(file_name, 'wb') as f:
-                    f.write(png)
-                    f.close()
+        f.write(png)
+        f.close()
                     
 save_image_of_path(many_faces_path)
