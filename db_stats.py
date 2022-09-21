@@ -10,6 +10,7 @@ Use the viewer constructed in step 1 to show an average shape and a few such out
 
 import pandas as pd
 import matplotlib.pyplot as plt
+from collections import Counter
 
 # import and load analysis data
 analysis = './psb_analysis.csv'
@@ -19,5 +20,10 @@ analysis_in = pd.read_csv(analysis)
 analysis_in.describe()
 analysis_in.info()
 
-# plotting
-plt.hist(analysis_in)
+# plotting histogram of integer fields in dataframe
+analysis_in.hist()
+
+#plotting distribution of categories
+cat_df = pd.DataFrame.from_dict(Counter(analysis_in['class']), orient='index', columns=['Total count'])
+cat_df.plot.bar()
+

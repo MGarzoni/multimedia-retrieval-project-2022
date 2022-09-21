@@ -27,21 +27,23 @@ def inspect_db(db_path):
                     mesh = trimesh.load(os.path.join(db_path, dirname, filename))
     
                     # save a dict containing all the desired attributes
-                    db_info[dirname][filename].update({'category':dirname, 'num_faces': len(mesh.faces), 'num_vertices': len(mesh.vertices), 'faces_type': 'triangles', 'axis_aligned_bounding_box': mesh.bounding_box.extents})
+                    db_info[dirname][filename].update({'class':dirname, 'num_faces': len(mesh.faces), 'num_vertices': len(mesh.vertices), 'faces_type': 'triangles', 'axis_aligned_bounding_box': mesh.bounding_box.extents})
 
     return db_info
 
 out_dict = inspect_db(PSB_PATH)
 
-# save to csv
-output = pd.DataFrame.from_dict(out_dict, orient='columns')
-output.to_csv('psb_analysis.csv')
+# # save to csv
+# output = pd.DataFrame.from_dict(out_dict, orient='columns')
+# output.to_csv('psb_analysis.csv')
 
-#alternative csv with category as ATTRIBUTE rather than column
-out_dict_2 = {}
+#create csv with class as ATTRIBUTE rather than column
+out_dict_2 = {} #this dictionary will have filename as key, and dictionary of attributes as value
 
 for dirname, files in out_dict.items():
     for file in files:
         out_dict_2[file] = out_dict[dirname][file]
+        
+#output dictionary to csv
 output2 = pd.DataFrame.from_dict(out_dict_2, orient = 'index')
-output2.to_csv('psb_analysis2.csv')
+output2.to_csv('psb_analysis.csv')
