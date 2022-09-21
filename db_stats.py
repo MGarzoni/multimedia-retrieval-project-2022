@@ -11,6 +11,9 @@ Use the viewer constructed in step 1 to show an average shape and a few such out
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import Counter
+import random
+import trimesh
+import os
 
 # import and load analysis data
 analysis = './psb_analysis.csv'
@@ -27,3 +30,30 @@ analysis_in.hist()
 cat_df = pd.DataFrame.from_dict(Counter(analysis_in['class']), orient='index', columns=['Total count'])
 cat_df.plot.bar()
 
+#find an outlier with very few faces
+
+#random filename with fewer than __ faces
+few_faces_path = random.choice(list(analysis_in[analysis_in['num_faces'] < 3000].path))
+
+#random filename with more than __ faces
+many_faces_path = random.choice(list(analysis_in[analysis_in['num_faces'] > 40000].path))
+
+
+
+def save_image_of_path(path,tag = None):
+    
+    #generate png
+    scene = trimesh.load(path).scene()
+    png = scene.save_image()
+    
+    #generate filename
+    file_name = os.path.basename(path)
+    
+    if tag != None: #add tag to filename if there is one
+        file_name = file_name + "_" + tag
+    
+    with open(file_name, 'wb') as f:
+                    f.write(png)
+                    f.close()
+                    
+save_image_of_path(many_faces_path)

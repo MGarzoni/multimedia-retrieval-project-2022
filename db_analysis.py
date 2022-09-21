@@ -27,7 +27,7 @@ def inspect_db(db_path):
                     mesh = trimesh.load(os.path.join(db_path, dirname, filename))
     
                     # save a dict containing all the desired attributes
-                    db_info[dirname][filename].update({'class':dirname, 'num_faces': len(mesh.faces), 'num_vertices': len(mesh.vertices), 'faces_type': 'triangles', 'axis_aligned_bounding_box': mesh.bounding_box.extents})
+                    db_info[dirname][filename].update({'class':dirname, 'num_faces': len(mesh.faces), 'num_vertices': len(mesh.vertices), 'faces_type': 'triangles', 'axis_aligned_bounding_box': mesh.bounding_box.extents, 'path':os.path.join(db_path, dirname, filename)})
 
     return db_info
 
@@ -46,4 +46,7 @@ for dirname, files in out_dict.items():
         
 #output dictionary to csv
 output2 = pd.DataFrame.from_dict(out_dict_2, orient = 'index')
+output2 = output2.rename_axis('filename').reset_index()
 output2.to_csv('psb_analysis.csv')
+
+output2.head()
