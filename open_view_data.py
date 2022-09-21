@@ -17,7 +17,7 @@ def open_and_display_mesh(db_path):
     # consider only 3D mesh file types
     if rand_ent.endswith(('.ply', '.obj', '.off')):
         mesh = trimesh.load(os.path.join(db_path, rand_cat, rand_ent))
-        return mesh.show()
+        return mesh.show(viewer = 'gl') #may require pyglet package
     else:
         print("File is not a 3D mesh")
     
