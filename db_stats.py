@@ -8,38 +8,49 @@ Use output of filter (csv file) to find out:
 Use the viewer constructed in step 1 to show an average shape and a few such outliers (if any)
 '''
 
+# import libraries
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import Counter
 import random
 import trimesh
 import os
+import seaborn as sns
 
 # import and load analysis data
-analysis = './psb_analysis.csv'
-analysis_in = pd.read_csv(analysis)
+psb_analysis_in = './psb_analysis.csv'
+psb_df = pd.read_csv(psb_analysis_in)
 
 # inspect dataframe
-print(analysis_in.describe())
-print(analysis_in.info())
+print(psb_df.describe())
+print(psb_df.info())
+
+# plot distribution of vertices and faces across PSB DB
+sns.kdeplot(psb_df['num_vertices'], color='r', shade=True, label='num_vertices')
+sns.kdeplot(psb_df['num_faces'], color='g', shade=True, label='num_faces')
+plt.xlabel("Frequency")
+plt.ylabel("Density")
+plt.title("Distribution of vertices and faces across PSB DB")
+plt.legend()
+plt.show()
+
+# check average shape in DB in terms vertex and face counts -> class: ANT
+print(psb_df.groupby('num_vertices')['class'].head())
+print(psb_df.groupby('num_faces')['class'].head())
 
 # plotting distribution of categories
-cat_df = pd.DataFrame.from_dict(Counter(analysis_in['class']), orient='index', columns=['Total count'])
+cat_df = pd.DataFrame.from_dict(Counter(psb_df['num_vertices']), orient='index', columns=['Total count'])
 cat_df.plot.bar()
 
-#plotting distribution of faces
-analysis_in.num_faces.plot.hist()
-
-# find an outlier with very few faces
-
 # random filename with fewer than __ faces
-few_faces_path = random.choice(list(analysis_in[analysis_in['num_faces'] < 3000].path))
+few_faces_path = random.choice(list(psb_df[psb_df['num_faces'] < 3000].path))
 print(f"Random 3D entity with fewer than 3000 faces: {few_faces_path}")
 
 # random filename with more than __ faces
-many_faces_path = random.choice(list(analysis_in[analysis_in['num_faces'] > 40000].path))
+many_faces_path = random.choice(list(psb_df[psb_df['num_faces'] > 40000].path))
 print(f"Random 3D entity with more than 4000 faces: {many_faces_path}")
 
+# save above images to .png
 def save_image_of_path(path, tag=None):
     
     # generate png
@@ -52,7 +63,7 @@ def save_image_of_path(path, tag=None):
     if tag != None: # add tag to filename if there is one
         file_name = file_name + "_" + tag
     
-    with open(file_name+".png", 'wb') as f:
+    with open(file_name, 'wb') as f:
         f.write(png)
         f.close()
                     
