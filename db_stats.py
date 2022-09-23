@@ -27,6 +27,9 @@ print(analysis_in.info())
 cat_df = pd.DataFrame.from_dict(Counter(analysis_in['class']), orient='index', columns=['Total count'])
 cat_df.plot.bar()
 
+#plotting distribution of faces
+analysis_in.num_faces.plot.hist()
+
 # find an outlier with very few faces
 
 # random filename with fewer than __ faces
@@ -49,7 +52,7 @@ def save_image_of_path(path, tag=None):
     if tag != None: # add tag to filename if there is one
         file_name = file_name + "_" + tag
     
-    with open(file_name, 'wb') as f:
+    with open(file_name+".png", 'wb') as f:
         f.write(png)
         f.close()
                     
