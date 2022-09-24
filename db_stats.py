@@ -63,8 +63,8 @@ def save_image_of_path(path, tag=None):
     if tag != None: # add tag to filename if there is one
         file_name = file_name + "_" + tag
     
-    with open(file_name, 'wb') as f:
+    with open(file_name+".png", 'wb') as f:
         f.write(png)
         f.close()
                     
-save_image_of_path(many_faces_path)
+save_image_of_path(many_faces_path, tag="many_faces")
