@@ -39,7 +39,7 @@ print(psb_df.groupby('num_vertices')['class'].head())
 print(psb_df.groupby('num_faces')['class'].head())
 
 # plotting distribution of categories
-cat_df = pd.DataFrame.from_dict(Counter(psb_df['num_vertices']), orient='index', columns=['Total count'])
+cat_df = pd.DataFrame.from_dict(Counter(psb_df['class']), orient='index', columns=['Total count'])
 cat_df.plot.bar()
 
 # random filename with fewer than __ faces
