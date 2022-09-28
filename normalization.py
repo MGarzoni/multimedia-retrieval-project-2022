@@ -16,15 +16,16 @@ from utils import *
 sample = "./psb-labeled-db/Airplane/80.off"
 original_mesh = trimesh.load(sample)
 #original_mesh.show(viewer='gl')
-save_mesh_png(original_mesh, "original", camera_fov = (90, 90))
+save_mesh_png(original_mesh, "original")
 
 original_camera = original_mesh.scene().camera.copy()
 
 # translation
 translated_mesh = original_mesh.copy()
-translated_mesh = translated_mesh.apply_translation((1000,1000,0)) # not sure if correct
+translated_mesh.vertices = original_mesh.vertices + [1000, 1000, 1000]
+#translated_mesh = translated_mesh.apply_translation((1000,1000,0)) # not sure if correct
 #translated_mesh.show()
-save_mesh_png(translated_mesh, "translated", camera_fov = ((1,1)))
+save_mesh_png(translated_mesh, "translated")
 
 # scaling
 scaled_mesh = translated_mesh.apply_scale((1,1,1)) # not sure if correct

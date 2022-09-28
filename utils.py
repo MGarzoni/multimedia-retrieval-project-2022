@@ -8,11 +8,30 @@ Created on Wed Sep 28 15:55:41 2022
 
 import trimesh
 import os
+import math
 
 #save mesh object as png (file name should not include .png)
-def save_mesh_png(mesh, filename, camera_fov = None):
-    scene = mesh.scene()
-    scene.Camera= trimesh.scene.Camera(fov=(camera_fov))
+def save_mesh_png(mesh, filename, corners = None):
+    
+    #code following save image example from trimesh documentation
+    scene = trimesh.Scene()
+    scene.add_geometry(mesh)
+    if corners is None: #if no corners given
+        corners = scene.bounds_corners
+    print("Corners", filename, corners)
+    r_e = trimesh.transformations.euler_matrix(
+        math.radians(45),
+        math.radians(45),
+        math.radians(45),
+        "ryxz",
+        )
+    
+    t_r = scene.camera.look_at(corners, rotation=r_e)
+    
+    scene.camera_transform = t_r
+    
+    
+    #scene.Camera= trimesh.scene.Camera(fov=(camera_fov))
     png = scene.save_image()
     
     with open(filename+".png", 'wb') as f:
