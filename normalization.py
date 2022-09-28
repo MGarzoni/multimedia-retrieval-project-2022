@@ -9,23 +9,22 @@
 import trimesh
 import os
 
+#utils
+from utils import *
+
 # read shape
 sample = "./psb-labeled-db/Airplane/80.off"
 original_mesh = trimesh.load(sample)
-original_mesh.show(viewer='gl')
+#original_mesh.show(viewer='gl')
+save_mesh_png(original_mesh, "original", camera_fov = (90, 90))
 
-orig_scene = original_mesh.scene()
-orig_png = orig_scene.save_image()
-
-# generate filename
-
-with open("original.png", 'wb') as f:
-    f.write(orig_png)
-    f.close()
+original_camera = original_mesh.scene().camera.copy()
 
 # translation
-translated_mesh = original_mesh.apply_translation((0,0,0)) # not sure if correct
-translated_mesh.show()
+translated_mesh = original_mesh.copy()
+translated_mesh = translated_mesh.apply_translation((1000,1000,0)) # not sure if correct
+#translated_mesh.show()
+save_mesh_png(translated_mesh, "translated", camera_fov = ((1,1)))
 
 # scaling
 scaled_mesh = translated_mesh.apply_scale((1,1,1)) # not sure if correct
