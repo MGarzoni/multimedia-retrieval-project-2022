@@ -9,10 +9,9 @@ Created on Wed Sep 28 15:55:41 2022
 import trimesh
 import os
 
-#save mesh object as png (file name should not include .png)
-def save_mesh_png(mesh, filename, camera_fov = None):
+#save mesh as png (file name should not include .png)
+def save_mesh_png(mesh, filename):
     scene = mesh.scene()
-    scene.Camera= trimesh.scene.Camera(fov=(camera_fov))
     png = scene.save_image()
     
     with open(filename+".png", 'wb') as f:
@@ -20,7 +19,7 @@ def save_mesh_png(mesh, filename, camera_fov = None):
         f.close()
     
 
-# save shape at path to .png, with tag added after underscore
+# save path shape to .png
 def save_image_of_path(path, tag=None):
     
     mesh = trimesh.load(path)
