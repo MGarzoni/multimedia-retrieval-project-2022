@@ -7,11 +7,21 @@
 
 # imports
 import trimesh
+import os
 
 # read shape
-sample = "./test-data-db/airplane/61.off"
+sample = "./psb-labeled-db/Airplane/80.off"
 original_mesh = trimesh.load(sample)
-original_mesh.show()
+original_mesh.show(viewer='gl')
+
+orig_scene = original_mesh.scene()
+orig_png = orig_scene.save_image()
+
+# generate filename
+
+with open("original.png", 'wb') as f:
+    f.write(orig_png)
+    f.close()
 
 # translation
 translated_mesh = original_mesh.apply_translation((0,0,0)) # not sure if correct

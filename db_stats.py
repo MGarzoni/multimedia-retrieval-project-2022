@@ -17,6 +17,9 @@ import trimesh
 import os
 import seaborn as sns
 
+#import our util functions
+from utils import *
+
 # import and load analysis data
 psb_analysis_in = './psb_analysis.csv'
 psb_df = pd.read_csv(psb_analysis_in)
@@ -49,22 +52,6 @@ print(f"Random 3D entity with fewer than 3000 faces: {few_faces_path}")
 # random filename with more than __ faces
 many_faces_path = random.choice(list(psb_df[psb_df['num_faces'] > 40000].path))
 print(f"Random 3D entity with more than 4000 faces: {many_faces_path}")
-
-# save above images to .png
-def save_image_of_path(path, tag=None):
-    
-    # generate png
-    scene = trimesh.load(path).scene()
-    png = scene.save_image()
-    
-    # generate filename
-    file_name = os.path.basename(path)
-    
-    if tag != None: # add tag to filename if there is one
-        file_name = file_name + "_" + tag
-    
-    with open(file_name+".png", 'wb') as f:
-        f.write(png)
-        f.close()
-                    
+   
+#save png                 
 save_image_of_path(many_faces_path, tag="many_faces")

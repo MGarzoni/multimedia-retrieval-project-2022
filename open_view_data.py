@@ -17,6 +17,6 @@ def open_and_display_mesh(db_path):
 
     # load and display mesh
     mesh = trimesh.load(os.path.join(db_path, rand_cat, rand_ent))
-    return mesh.show()
+    return mesh.show(viewer='gl')
     
 open_and_display_mesh(PSB_PATH)
