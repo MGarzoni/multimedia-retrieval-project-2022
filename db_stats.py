@@ -55,3 +55,5 @@ print(f"Random 3D entity with more than 4000 faces: {many_faces_path}")
    
 #save png                 
 save_image_of_path(many_faces_path, tag="many_faces")
+
+#save_image_of_path("./psb-labeled-db/Bird/243.off")
