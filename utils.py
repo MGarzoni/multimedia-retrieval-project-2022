@@ -47,7 +47,7 @@ def save_mesh_png(mesh, filename, corners = None):
     #scene.Camera= trimesh.scene.Camera(fov=(camera_fov))
     png = scene.save_image()
     
-    with open(filename+".png", 'wb') as f:
+    with open("./pics/"+filename+".png", 'wb') as f:
         f.write(png)
         f.close()
     
