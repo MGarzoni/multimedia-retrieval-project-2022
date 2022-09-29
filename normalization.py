@@ -8,43 +8,60 @@
 # imports
 import trimesh
 import os
+import numpy as np
 
 #utils
 from utils import *
 
+#corners of image for png export
+corners = [[-1, -1, -1],
+       [ 1, -1, -1],
+       [ 1,  1, -1],
+       [-1,  1, -1],
+       [-1, -1,  1],
+       [ 1, -1,  1],
+       [ 1,  1,  1],
+       [-1,  1,  1]]
+
 # read shape
-sample = "./psb-labeled-db/Airplane/80.off"
+sample = "./psb-labeled-db/Bird/242.off"
 original_mesh = trimesh.load(sample)
-#original_mesh.show(viewer='gl')
-save_mesh_png(original_mesh, "original")
+mesh = original_mesh.copy()
+save_mesh_png(mesh, "1", corners = corners)
 
-original_camera = original_mesh.scene().camera.copy()
+# translation to origin
+mesh = center_at_origin(mesh)
+save_mesh_png(mesh, "2", corners = corners)
+translated_mesh = mesh.copy()
 
-# translation
-translated_mesh = original_mesh.copy()
-translated_mesh.vertices = original_mesh.vertices + [1000, 1000, 1000]
-#translated_mesh = translated_mesh.apply_translation((1000,1000,0)) # not sure if correct
-#translated_mesh.show()
-save_mesh_png(translated_mesh, "translated")
+# scaling so it fits in unit-sized cube
+maxsize = np.amax(np.abs(mesh.bounds))
+mesh.apply_scale((1/maxsize, 1/maxsize, 1/maxsize))
+scaled_mesh = mesh.copy()
+save_mesh_png(mesh, "3", corners = corners)
 
-# scaling
-scaled_mesh = translated_mesh.apply_scale((1,1,1)) # not sure if correct
-scaled_mesh.show()
+#BEFORE AND AFTER
+#before_after(original_mesh, mesh, corners)
 
-# check if things actually changed (nothing did - YET)
-# here comparing any of the attributes of the meshes will do
-print(translated_mesh.centroid == scaled_mesh.centroid)
+#print stats to demonstrate changes
+print("Original barrycenter: {}\nOriginal bounds:\n{}".format(original_mesh.centroid, original_mesh.bounds) )
+print("\nNEW barrycenter: {}\nNEW bounds:\n{}".format(mesh.centroid, mesh.bounds) )
 
-ois = original_mesh.__dict__.items()
-tis = translated_mesh.__dict__.items()
-sis = scaled_mesh.__dict__.items()
-for (oa,ov), (ta,tv), (sa,sv) in zip(ois, tis, sis):
+#This is giong to be a very small difference actually
+print(translated_mesh.centroid - scaled_mesh.centroid)
 
-    print(f"checking {ov} change between original and translated mesh")
-    if oa == ta:
-        print(ov == tv)
 
-    print(f"\nchecking {tv} change between translated and scaled mesh")
-    if ta == sa:
-        print(tv == sv)
+# #the below loop is currently throwing an error
+# ois = original_mesh.__dict__.items()
+# tis = translated_mesh.__dict__.items()
+# sis = scaled_mesh.__dict__.items()
+# for (oa,ov), (ta,tv), (sa,sv) in zip(ois, tis, sis):
+
+#     print(f"checking {ov} change between original and translated mesh")
+#     if oa == ta:
+#         print(ov == tv)
+
+#     print(f"\nchecking {tv} change between translated and scaled mesh")
+#     if ta == sa:
+#         print(tv == sv)
 
