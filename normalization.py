@@ -65,20 +65,3 @@ print("\nNEW barrycenter: {}\nNEW bounds:\n{}".format(mesh.centroid, mesh.bounds
 
 #This is giong to be a very small difference actually
 #print(translated_mesh.centroid - scaled_mesh.centroid)
-
-
-# #the below loop is currently throwing an error
-
-ois = original_mesh.__dict__.items()
-tis = translated_mesh.__dict__.items()
-sis = scaled_mesh.__dict__.items()
-# for (oa,ov), (ta,tv), (sa,sv) in zip(ois, tis, sis):
-
-#     print(f"checking {ov} change between original and translated mesh")
-#     if oa == ta:
-#         print(ov == tv)
-
-#     print(f"\nchecking {tv} change between translated and scaled mesh")
-#     if ta == sa:
-#         print(tv == sv)
-
