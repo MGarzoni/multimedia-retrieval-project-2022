@@ -35,7 +35,7 @@ save_mesh_png(mesh, "translated", corners = corners)
 translated_mesh = mesh.copy()
 
 # scaling so it fits in unit-sized cube
-maxsize = np.amax(np.abs(mesh.bounds))
+maxsize = np.amax(np.abs(mesh.bounds)) #find max coordinate magnitude in any dim
 mesh.apply_scale((1/maxsize, 1/maxsize, 1/maxsize))
 scaled_mesh = mesh.copy()
 save_mesh_png(mesh, "scaled", corners = corners)
