@@ -14,12 +14,11 @@ import numpy as np
 
 def center_at_origin(mesh):
     """takes a trimesh object.
-    returns a new mesh that has been translated so barrycenter is at origin"""
+    returns a new mesh that has been translated so barycenter is at origin"""
     translated_mesh = mesh.copy()
     translated_mesh.vertices = mesh.vertices - mesh.centroid
     return translated_mesh
-    
-    
+
 
 #save mesh object as png (file name should not include .png)
 def save_mesh_png(mesh, filename, corners = None):
