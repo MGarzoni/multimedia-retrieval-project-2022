@@ -9,6 +9,7 @@ Created on Wed Sep 28 15:55:41 2022
 import trimesh
 import os
 import math
+import numpy as np
 
 
 def center_at_origin(mesh):
@@ -72,3 +73,11 @@ def before_after(mesh1, mesh2, corners = None):
         corners = mesh2.scene().bounds_corners 
     save_mesh_png(mesh1, "before", corners = corners)
     save_mesh_png(mesh2, "after", corners = corners)
+    
+def pca_eigenvalues_eigenvectors(mesh):
+    
+    #matrix of points of shape (3, nr points)
+    A = np.transpose(mesh.vertices)
+    A_cov = np.cov(A)
+    eigenvalues, eigenvectors = np.linalg.eig(A_cov)
+    return eigenvalues, eigenvectors

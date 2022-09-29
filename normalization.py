@@ -10,10 +10,10 @@ import trimesh
 import os
 import numpy as np
 
-#utils
+# utils
 from utils import *
 
-#corners of image for png export
+# corners of image used for png export
 corners = [[-1, -1, -1],
        [ 1, -1, -1],
        [ 1,  1, -1],
@@ -40,10 +40,22 @@ mesh.apply_scale((1/maxsize, 1/maxsize, 1/maxsize))
 scaled_mesh = mesh.copy()
 save_mesh_png(mesh, "scaled", corners = corners)
 
-#BEFORE AND AFTER
-#before_after(original_mesh, mesh, corners)
 
-#print stats to demonstrate changes
+
+# PCA 
+eigenvalues, eigenvectors = pca_eigenvalues_eigenvectors(mesh)
+print("==> eigenvalues for (x, y, z)")
+print(eigenvalues)
+print("\n==> eigenvectors")
+print(eigenvectors)
+
+
+
+
+# # before and after pictures
+# before_after(original_mesh, mesh, corners)
+
+# print stats to demonstrate changes
 print("Original barrycenter: {}\nOriginal bounds:\n{}".format(original_mesh.centroid, original_mesh.bounds) )
 print("\nNEW barrycenter: {}\nNEW bounds:\n{}".format(mesh.centroid, mesh.bounds) )
 
