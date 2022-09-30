@@ -20,6 +20,7 @@ outlier_mesh = trimesh.load("./psb-labeled-db/Hand/200.off")
 outlier_mesh.show()
 
 # resampling here (after running java -jar off tool)
+# paths may change
 remeshed_cullark_mesh = trimesh.load("./psb-labeled-db/Hand/200-REMESHED.off")
-# remeshed_doosabin_mesh = trimesh.load("./psb-labeled-db/fourleg-398-doosabin-REMESHED.off")
+remeshed_doosabin_mesh = trimesh.load("./psb-labeled-db/fourleg-398-doosabin-REMESHED.off")
 print(f"Num of vertices before remeshing: {len(outlier_mesh.vertices)}\nNumber of vertices after remeshing with McCullark method: {len(remeshed_cullark_mesh.vertices)}\nNumber of vertices after remeshing with Doosabin method: {len(remeshed_doosabin_mesh.vertices)}")
