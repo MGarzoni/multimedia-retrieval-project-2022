@@ -1,0 +1,37 @@
+TO DO FIRST:
+need to create a function (universal, add to utils) that extracts useful attributes from shape and returns them as dictionary to then add to csv
+
+function extract_attributes( path, out_bound=(0, 2500) ):
+    define out_dict
+    load mesh
+    add to dict following attributes:
+        'path', 'class', 'num_faces', 'num_vertices', 'faces_type', 'axis_aligned_bounding_box',
+        'is_out', 'centroid'
+
+    return out_dict
+
+CONSTANT = corners matrix
+
+need to add is_out column (bool) for each sample indicating if sample is an outlier
+need to add centroid column for each sample indicating centroid coordinates
+
+function pipeline( path, out_dir, display_meshes=False ):
+
+    define output dictionary holding info about updated values to add to newshapes.csv
+    
+    read original_csv file
+
+    check if path is outlier (possibly treat this exception):
+        run java subdivider and get refined mesh (here num_vertices changes value)
+        update num_vertices column
+
+    load shape from path
+
+    translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
+    scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
+    compute eigenvalues and eigenvectors
+    apply pca on them (with pca function from utils) (here value changes)
+
+    call function to extract attributes and add them to output_dictionary
+
+    return output_dictionary
