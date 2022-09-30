@@ -39,8 +39,6 @@ mesh = scale_to_unit(mesh)
 save_mesh_png(mesh, "scaled", corners = corners)
 scaled_mesh = mesh.copy()
 
-
-
 # PCA 
 eigenvalues, eigenvectors = pca_eigenvalues_eigenvectors(mesh)
 print("==> eigenvalues for (x, y, z)")
@@ -48,19 +46,9 @@ print(eigenvalues)
 print("\n==> eigenvectors")
 print(eigenvectors)
 
-
-
-
 # # before and after pictures
 # before_after(original_mesh, mesh, corners)
 
 # print stats to demonstrate changes
 print("Original barrycenter: {}\nOriginal bounds:\n{}".format(original_mesh.centroid, original_mesh.bounds) )
 print("\nNEW barrycenter: {}\nNEW bounds:\n{}".format(mesh.centroid, mesh.bounds) )
-
-
-
-#more statistics
-
-#This is giong to be a very small difference actually
-#print(translated_mesh.centroid - scaled_mesh.centroid)

@@ -1,15 +1,28 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Sep 28 15:55:41 2022
-
-@author: eduardsaakashvili
-"""
-
+# imports
 import trimesh
 import os
 import math
 import numpy as np
+
+
+def extract_attributes(path, outliers_range=range(3500)):
+    """Given a path, loads the mesh, checks if it's an outlier,
+    and then adds required attributes of mesh to the out_dict to be returned;
+    can also set the outlier range (default is (0, 3500))."""
+
+    # load mesh
+    mesh = trimesh.load(path)
+
+    # add attributes to out_dict
+    out_dict = {"category" : path.split('/')[7], # this may change
+                "num_faces" : len(mesh.faces),
+                "num_vertices" : len(mesh.vertices),
+                "faces_type" : 'triangles',
+                "axis_aligned_bounding_box" : mesh.bounding_box.extents,
+                "is_out" : True if len(mesh.vertices) in outliers_range else False,
+                "centroid" : mesh.centroid}
+    
+    return out_dict
 
 
 def center_at_origin(mesh):

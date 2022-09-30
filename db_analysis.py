@@ -48,3 +48,35 @@ output2 = output2.rename_axis('filename').reset_index()
 output2.to_csv('psb_analysis.csv')
 
 output2.head()
+
+'''
+need to create a function (universal, add to utils) that extracts useful attributes from shape and returns them as dictionary to then add to csv
+
+function extract_attributes( path, out_bound=(0, 2500) ):
+    define out_dict
+    load mesh
+    add to dict following attributes:
+        'path', 'category', 'num_faces', 'num_vertices', 'faces_type', 'axis_aligned_bounding_box',
+        'is_out', 'centroid'
+
+    return out_dict
+'''
+
+def extract_attributes(path, outliers_range=range(3500)):
+    """Given a path, loads the mesh, checks if it's an outlier,
+    and then adds required attributes of mesh to the out_dict to be returned;
+    can also set the outlier range (default is (0, 3500))."""
+
+    # load mesh
+    mesh = trimesh.load(path)
+
+    # add attributes to out_dict
+    out_dict = {"category" : path.split('/')[7], # this may change
+                "num_faces" : len(mesh.faces),
+                "num_vertices" : len(mesh.vertices),
+                "faces_type" : 'triangles',
+                "axis_aligned_bounding_box" : mesh.bounding_box.extents,
+                "is_out" : True if len(mesh.vertices) in outliers_range else False,
+                "centroid" : mesh.centroid}
+    
+    return out_dict
