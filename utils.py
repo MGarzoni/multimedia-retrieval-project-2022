@@ -26,7 +26,7 @@ def save_mesh_png(mesh, filename, corners = None):
     #code following save image example from trimesh documentation
     scene = trimesh.Scene()
     scene.add_geometry(mesh)
-    scene.add_geometry(trimesh.creation.axis(axis_length = 1)) #add axis!
+    scene.add_geometry(trimesh.creation.axis(axis_length = 1)) #add x, y, z axes to scene
     if corners is None: #if no corners given
         corners = scene.bounds_corners
     #print("Corners", filename, corners)
@@ -39,8 +39,8 @@ def save_mesh_png(mesh, filename, corners = None):
         "ryxz",
         )
     
+    #use corners and angles to define camera's point of view
     t_r = scene.camera.look_at(corners, rotation=r_e)
-    
     scene.camera_transform = t_r
     
     
@@ -74,7 +74,6 @@ def before_after(mesh1, mesh2, corners = None):
     save_mesh_png(mesh2, "after", corners = corners)
     
 def pca_eigenvalues_eigenvectors(mesh):
-    
     #matrix of points of shape (3, nr points)
     A = np.transpose(mesh.vertices)
     A_cov = np.cov(A)
