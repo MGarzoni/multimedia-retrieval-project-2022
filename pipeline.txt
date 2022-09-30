@@ -1,4 +1,4 @@
-TO DO FIRST:
+TO DO FIRST: DONE
 need to create a function (universal, add to utils) that extracts useful attributes from shape and returns them as dictionary to then add to csv
 
 function extract_attributes( path, out_bound=(0, 2500) ):
@@ -12,8 +12,8 @@ function extract_attributes( path, out_bound=(0, 2500) ):
 
 CONSTANT = corners matrix
 
-need to add is_out column (bool) for each sample indicating if sample is an outlier
-need to add centroid column for each sample indicating centroid coordinates
+need to add is_out column (bool) for each sample indicating if sample is an outlier DONE
+need to add centroid column for each sample indicating centroid coordinates DONE
 
 function pipeline( path, out_dir, display_meshes=False ):
 
