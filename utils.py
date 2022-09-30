@@ -19,6 +19,13 @@ def center_at_origin(mesh):
     translated_mesh.vertices = mesh.vertices - mesh.centroid
     return translated_mesh
 
+def scale_to_unit(mesh):
+    """Return mesh scaled to unit cube"""
+    scaled_mesh = mesh.copy()
+    maxsize = np.amax(np.abs(mesh.bounds)) #find max coordinate magnitude in any dim
+    scaled_mesh.apply_scale((1/maxsize, 1/maxsize, 1/maxsize))
+    return scaled_mesh
+
 
 #save mesh object as png (file name should not include .png)
 def save_mesh_png(mesh, filename, corners = None):
