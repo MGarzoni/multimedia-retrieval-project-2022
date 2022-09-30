@@ -13,76 +13,83 @@ import numpy as np
 
 
 def center_at_origin(mesh):
-    """takes a trimesh object.
+    """Given a trimesh object,
     returns a new mesh that has been translated so barycenter is at origin"""
+
     translated_mesh = mesh.copy()
     translated_mesh.vertices = mesh.vertices - mesh.centroid
+
     return translated_mesh
+
 
 def scale_to_unit(mesh):
     """Return mesh scaled to unit cube"""
+
     scaled_mesh = mesh.copy()
     maxsize = np.amax(np.abs(mesh.bounds)) #find max coordinate magnitude in any dim
     scaled_mesh.apply_scale((1/maxsize, 1/maxsize, 1/maxsize))
+
     return scaled_mesh
 
 
-#save mesh object as png (file name should not include .png)
 def save_mesh_png(mesh, filename, corners = None):
-    
-    #code following save image example from trimesh documentation
+    """Save mesh object as png along with the x,y,z axes visualized"""
+
     scene = trimesh.Scene()
     scene.add_geometry(mesh)
     scene.add_geometry(trimesh.creation.axis(axis_length = 1)) #add x, y, z axes to scene
-    if corners is None: #if no corners given
+
+    if corners is None: # add corners
         corners = scene.bounds_corners
-    #print("Corners", filename, corners)
     
-    #set 45 degree view so all axes are visible
+    # set 45 degree view so all axes are visible
     r_e = trimesh.transformations.euler_matrix(
         math.radians(45),
         math.radians(45),
         math.radians(45),
-        "ryxz",
-        )
+        "ryxz")
     
-    #use corners and angles to define camera's point of view
+    # use corners and angles to define camera's point of view
     t_r = scene.camera.look_at(corners, rotation=r_e)
-    scene.camera_transform = t_r
+    scene.camera_transform = t_r 
     
-    
-    #scene.Camera= trimesh.scene.Camera(fov=(camera_fov))
+    # scene.Camera= trimesh.scene.Camera(fov=(camera_fov))
     png = scene.save_image()
     
+    # save png
     with open("./pics/"+filename+".png", 'wb') as f:
         f.write(png)
         f.close()
-    
 
-# save shape at path to .png, with tag added after underscore
+
 def save_image_of_path(path, tag=None):
-    
+    """Save shape at path to .png, with tag added after underscore"""
+
     mesh = trimesh.load(path)
-    
-    # generate filename
     file_name = os.path.basename(path)
     
-    if tag != None: # add tag to filename if there is one
+    if tag != None: # add tag to filename if one is given
         file_name = file_name + "_" + tag
     
     save_mesh_png(mesh, file_name)
     
-    
-#save "before.png" and "after.png" with two meshes. camera bounding box set by SECOND image
+
 def before_after(mesh1, mesh2, corners = None):
+    """Save "before.png" and "after.png" with two meshes;
+    Camera bounding box set by SECOND image"""
+
     if corners is None:
         corners = mesh2.scene().bounds_corners 
+
     save_mesh_png(mesh1, "before", corners = corners)
     save_mesh_png(mesh2, "after", corners = corners)
     
+
 def pca_eigenvalues_eigenvectors(mesh):
-    #matrix of points of shape (3, nr points)
+    """Matrix of points of shape (3, nr points)"""
+
     A = np.transpose(mesh.vertices)
     A_cov = np.cov(A)
     eigenvalues, eigenvectors = np.linalg.eig(A_cov)
+
     return eigenvalues, eigenvectors
