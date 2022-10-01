@@ -119,7 +119,7 @@ def loop_pipeline(paths_list, csv_path):
     for path in paths_list:
         #file of path
         filename = os.path.basename(path)
-        #normalize and extract attributes into new dictionary
+        #normalize, export new file, and and extract attributes into new dictionary
         new_files_dict[filename] = normalization_pipeline(path, files_dict, out_dir = "./normalized", verbose=True)
     
     #export updated attributes to new csv file
