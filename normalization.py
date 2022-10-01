@@ -55,9 +55,9 @@ function pipeline( path, files_dictionary, out_dir, display_meshes=False ):
 '''
 
 def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
-    """verbose=True includes IMAGES as well as text"""
+    """Verbose includes IMAGES"""
     
-    #load attributes of filename (from files_dictionary)
+    # load attributes of filename (from files_dictionary)
     attributes = files_dictionary[os.path.basename(path)]
     
     if attributes['is_out']:
@@ -69,7 +69,7 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     #         update num_vertices column #may be unnecessary since we re-extract attributes at the end
     
     
-    mesh = trimesh.load(path) #load mesh from path -- should load REMESHED path if it was an outlier
+    mesh = trimesh.load(path) # load mesh from path -- should load REMESHED path if it was an outlier
     
     if verbose: print("Before:", attributes)
     
@@ -96,13 +96,13 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
 
 
     # EXPORT MODIFIED MESH AS .OFF FILE INTO "NORMALIZED" FOLDER
-    output_path = os.path.join(out_dir, attributes['filename']) #where the exported mesh will go
+    output_path = os.path.join(out_dir, attributes['filename']) # where the exported mesh will go
     off_file = trimesh.exchange.off.export_off(mesh)
     with open(output_path, 'w+') as file:
         file.write(off_file)
 
     # call function to extract attributes and add them to output_dictionary
-    out_dict = extract_attributes_from_mesh(mesh, output_path, outliers_range=range(3500))
+    out_dict = extract_attributes_from_mesh(mesh, output_path)
     if verbose: print("After:", out_dict)
 
     return out_dict
@@ -117,17 +117,16 @@ def loop_pipeline(paths_list, csv_path):
     
     # loop through paths in list
     for path in paths_list:
-        #file of path
         filename = os.path.basename(path)
-        #normalize, export new file, and and extract attributes into new dictionary
+
+        # normalize and extract attributes into new dictionary
         new_files_dict[filename] = normalization_pipeline(path, files_dict, out_dir = "./normalized", verbose=True)
     
-    #export updated attributes to new csv file
+    # export updated attributes to new csv file
     output = pd.DataFrame.from_dict(new_files_dict, orient='index')
     output.to_csv('./normalized/normalized_attributes.csv')
     
-#test normalization pipeline
-
+# test normalization pipeline
 test_path = "./psb-labeled-db/Bird/242.off"
 outlier_path = "./psb-labeled-db/Hand/185.off"
 

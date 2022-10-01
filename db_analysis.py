@@ -33,12 +33,7 @@ def inspect_db(db_path):
 
 out_dict = inspect_db(PSB_PATH)
 
-        
-output = 
-
 # output dictionary to csv
 output = pd.DataFrame.from_dict(out_dict, orient='index')
 output.to_csv('psb_analysis.csv')
-
 output.head()
-

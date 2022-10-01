@@ -11,14 +11,14 @@ def extract_attributes_from_path(mesh_path, outliers_range=range(3500)):
     and then adds required attributes of mesh to the out_dict to be returned;
     can also set the outlier range (default is (0, 3500))."""
 
-    # load mesh
     mesh = trimesh.load(mesh_path)
 
-    # add attributes to out_dict
     return extract_attributes_from_mesh(mesh, mesh_path, outliers_range)
 
-def extract_attributes_from_mesh(mesh, mesh_path, outliers_range = range(3500)):
+
+def extract_attributes_from_mesh(mesh, mesh_path, outliers_range = range(1000)):
     """Extract features from a mesh that has already been loaded"""
+
     out_dict = {"filename" : mesh_path.split('/')[-1],
                 "path" : mesh_path,
                 "category" : mesh_path.split('/')[-2], # this may change
@@ -34,9 +34,12 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range = range(3500)):
 
 def attributes_csv_to_dict(csv_path):
     """Turn csv file of attributes into dictionary of dictionaries indexed by filename, each attribute is a key in each file's dictionary"""
+
     files_df = pd.read_csv(csv_path)
     files_dict = {row['filename']:row.to_dict() for index, row in files_df.iterrows()}
+
     return files_dict
+
 
 def center_at_origin(mesh):
     """Given a trimesh object,
