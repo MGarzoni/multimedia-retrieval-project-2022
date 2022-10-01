@@ -55,7 +55,7 @@ function pipeline( path, files_dictionary, out_dir, display_meshes=False ):
 '''
 
 def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
-    """Verbose includes IMAGES"""
+    """verbose=True includes IMAGES as well as text"""
     
     #load attributes of filename (from files_dictionary)
     attributes = files_dictionary[os.path.basename(path)]
