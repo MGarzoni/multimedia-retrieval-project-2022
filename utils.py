@@ -52,7 +52,7 @@ def scale_to_unit(mesh):
     """Return mesh scaled to unit cube"""
 
     scaled_mesh = mesh.copy()
-    maxsize = np.amax(np.abs(mesh.bounds)) #find max coordinate magnitude in any dim
+    maxsize = np.max(mesh.bounding_box.extents) #find max coordinate magnitude in any dim
     scaled_mesh.apply_scale((1/maxsize, 1/maxsize, 1/maxsize))
 
     return scaled_mesh

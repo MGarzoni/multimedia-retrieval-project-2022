@@ -16,7 +16,7 @@ import trimesh
 # utils
 from utils import *
 
-# corners of image used for png export
+# corners of image, array used for visually consistent png export of meshes
 corners = [[-1, -1, -1],
        [ 1, -1, -1],
        [ 1,  1, -1],
@@ -25,31 +25,6 @@ corners = [[-1, -1, -1],
        [ 1, -1,  1],
        [ 1,  1,  1],
        [-1,  1,  1]]
-
-# # read shape
-# sample = "./psb-labeled-db/Bird/242.off"
-# original_mesh = trimesh.load(sample)
-# mesh = original_mesh.copy()
-# save_mesh_png(mesh, "original", corners = corners)
-
-# # translation to origin
-# mesh = center_at_origin(mesh)
-# save_mesh_png(mesh, "translated", corners = corners)
-# translated_mesh = mesh.copy()
-
-# # scaling so it fits in unit-sized cube
-# mesh = scale_to_unit(mesh)
-# save_mesh_png(mesh, "scaled", corners = corners)
-# scaled_mesh = mesh.copy()
-
-# # PCA
-# eigenvalues, eigenvectors = pca_eigenvalues_eigenvectors(mesh)
-# print(f"=> eigenvalues for (x, y, z)\n{eigenvalues}")
-# print(f"=> eigenvectors\n{eigenvectors}")
-
-# # print stats to demonstrate changes
-# print(f"Original barycenter: {original_mesh.centroid}\nOriginal bounds:\n{original_mesh.bounds}")
-# print(f"NEW barycenter: {mesh.centroid}\nNEW bounds:\n{mesh.bounds}")
 
 
 '''
@@ -79,36 +54,38 @@ function pipeline( path, files_dictionary, out_dir, display_meshes=False ):
     return output_dictionary
 '''
 
-def normalization_pipeline(path, files_dictionary, out_dir, display_mesh=False):
+def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
+    """Verbose includes IMAGES"""
     
     #load attributes of filename (from files_dictionary)
     attributes = files_dictionary[os.path.basename(path)]
     
     if attributes['is_out']:
-        print(attributes['filename'], "is an outlier!")
+        print(attributes['filename'], "is an outlier!\n")
     #     check if path is outlier (possibly treat this exception):
     #         run java subdivider and get refined mesh (here num_vertices changes value)
+    #         export refined mesh to the "remeshed" directory
     #         change variable: path = refined mesh's path
-    #         update num_vertices column #may be unnecessary since we extract attributes at the end
+    #         update num_vertices column #may be unnecessary since we re-extract attributes at the end
     
     
-    mesh = trimesh.load(path) #load mesh from path
+    mesh = trimesh.load(path) #load mesh from path -- should load REMESHED path if it was an outlier
     
-    print("Before:", attributes)
+    if verbose: print("Before:", attributes)
     
     original_mesh = mesh.copy()
-    if display_mesh:
+    if verbose:
         save_mesh_png(mesh, "1.original", corners = corners)
 
     # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
     mesh = center_at_origin(mesh)
-    if display_mesh:
+    if verbose:
         save_mesh_png(mesh, "2.translated", corners = corners)
     translated_mesh = mesh.copy()
 
     # scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
     mesh = scale_to_unit(mesh)
-    if display_mesh:
+    if verbose:
         save_mesh_png(mesh, "3.scaled", corners = corners)
     scaled_mesh = mesh.copy()
 
@@ -126,17 +103,38 @@ def normalization_pipeline(path, files_dictionary, out_dir, display_mesh=False):
 
     # call function to extract attributes and add them to output_dictionary
     out_dict = extract_attributes_from_mesh(mesh, output_path, outliers_range=range(3500))
-    print("After:", out_dict)
+    if verbose: print("After:", out_dict)
 
     return out_dict
 
 
+def loop_pipeline(paths_list, csv_path):
+
+    files_dict = attributes_csv_to_dict(csv_path)
+    
+    # new attributes dict, initialize
+    new_files_dict = {}
+    
+    # loop through paths in list
+    for path in paths_list:
+        #file of path
+        filename = os.path.basename(path)
+        #normalize and extract attributes into new dictionary
+        new_files_dict[filename] = normalization_pipeline(path, files_dict, out_dir = "./normalized", verbose=True)
+    
+    #export updated attributes to new csv file
+    output = pd.DataFrame.from_dict(new_files_dict, orient='index')
+    output.to_csv('./normalized/normalized_attributes.csv')
+    
 #test normalization pipeline
 
 test_path = "./psb-labeled-db/Bird/242.off"
 outlier_path = "./psb-labeled-db/Hand/185.off"
 
-csv_path = "./psb_analysis.csv"
-files_dict = attributes_csv_to_dict(csv_path)
+# list of paths to normalize
+paths_list = [test_path, outlier_path]
 
-normalization_pipeline(test_path, files_dict, out_dir = "./normalized", display_mesh=True)
+# path of csv
+csv_path = "./psb_analysis.csv"
+
+loop_pipeline(paths_list, csv_path)
