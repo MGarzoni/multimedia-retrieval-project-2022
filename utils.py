@@ -5,16 +5,18 @@ import math
 import numpy as np
 
 
-def extract_attributes(path, outliers_range=range(3500)):
+def extract_attributes(mesh_path, outliers_range=range(3500)):
     """Given a path, loads the mesh, checks if it's an outlier,
     and then adds required attributes of mesh to the out_dict to be returned;
     can also set the outlier range (default is (0, 3500))."""
 
     # load mesh
-    mesh = trimesh.load(path)
+    mesh = trimesh.load(mesh_path)
 
     # add attributes to out_dict
-    out_dict = {"category" : path.split('/')[7], # this may change
+    out_dict = {"filename" : mesh_path.split('/')[-1],
+                "path" : mesh_path,
+                "category" : mesh_path.split('/')[-2], # this may change
                 "num_faces" : len(mesh.faces),
                 "num_vertices" : len(mesh.vertices),
                 "faces_type" : 'triangles',

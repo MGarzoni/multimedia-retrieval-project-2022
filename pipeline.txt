@@ -33,5 +33,7 @@ function pipeline( path, out_dir, display_meshes=False ):
     apply pca on them (with pca function from utils) (here value changes)
 
     call function to extract attributes and add them to output_dictionary
+    
+    save new mesh in out_dir!
 
     return output_dictionary
