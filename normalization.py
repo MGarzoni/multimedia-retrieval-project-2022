@@ -11,6 +11,7 @@ import trimesh
 import os
 import numpy as np
 import pandas as pd
+import trimesh
 
 # utils
 from utils import *
@@ -52,7 +53,9 @@ corners = [[-1, -1, -1],
 
 
 '''
-function pipeline( path, out_dir, display_meshes=False ):
+function pipeline( path, files_dictionary, out_dir, display_meshes=False ):
+    
+    input requires a dictionary of attributes indexed by filename. very easy to create from csv
 
     define output dictionary holding info about updated values to add to newshapes.csv
     
@@ -76,17 +79,23 @@ function pipeline( path, out_dir, display_meshes=False ):
     return output_dictionary
 '''
 
-def normalization_pipeline(path, files_dataframe, out_dir, display_mesh=False):
+def normalization_pipeline(path, files_dictionary, out_dir, display_mesh=False):
+    
+    #load attributes of filename (from files_dictionary)
+    attributes = files_dictionary[os.path.basename(path)]
+    
+    if attributes['is_out']:
+        print(attributes['filename'], "is an outlier!")
+    #     check if path is outlier (possibly treat this exception):
+    #         run java subdivider and get refined mesh (here num_vertices changes value)
+    #         change variable: path = refined mesh's path
+    #         update num_vertices column #may be unnecessary since we extract attributes at the end
     
     
-#     check if path is outlier (possibly treat this exception):
-#         run java subdivider and get refined mesh (here num_vertices changes value)
-#         change variable: path = refined mesh's path
-#         update num_vertices column #may be unnecessary since we extract attributes at the end
-
-    # load shape from path
-    mesh = trimesh.load(path)
-    print("Before:", extract_attributes(path))
+    mesh = trimesh.load(path) #load mesh from path
+    
+    print("Before:", attributes)
+    
     original_mesh = mesh.copy()
     if display_mesh:
         save_mesh_png(mesh, "1.original", corners = corners)
@@ -108,8 +117,15 @@ def normalization_pipeline(path, files_dataframe, out_dir, display_mesh=False):
     print(f"=> eigenvalues for (x, y, z)\n{eigenvalues}")
     print(f"=> eigenvectors\n{eigenvectors}")
 
+
+    # EXPORT MODIFIED FILE
+    output_path = os.path.join(out_dir, attributes['filename']) #where the exported mesh will go
+    off_file = trimesh.exchange.off.export_off(mesh)
+    with open(output_path, 'w+') as file:
+        file.write(off_file)
+
     # call function to extract attributes and add them to output_dictionary
-    out_dict = extract_attributes(path, outliers_range=range(3500))
+    out_dict = extract_attributes_from_mesh(mesh, output_path, outliers_range=range(3500))
     print("After:", out_dict)
 
     return out_dict
@@ -118,5 +134,8 @@ def normalization_pipeline(path, files_dataframe, out_dir, display_mesh=False):
 #test normalization pipeline
 
 test_path = "./psb-labeled-db/Bird/242.off"
-files_df = pd.read_csv("./psb_analysis.csv")
-normalization_pipeline(test_path, files_df, out_dir = None)
+
+csv_path = "./psb_analysis.csv"
+files_dict = attributes_csv_to_dict(csv_path)
+
+normalization_pipeline(test_path, files_dict, out_dir = "./normalized", display_mesh=True)

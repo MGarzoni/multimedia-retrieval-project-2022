@@ -27,17 +27,18 @@ def inspect_db(db_path):
                     full_path = os.path.join(db_path, dirname, filename)
     
                     # save a dict containing all the desired attributes
-                    db_info[filename] = utils.extract_attributes(full_path)
+                    db_info[filename] = utils.extract_attributes_from_path(full_path)
 
     return db_info
 
 out_dict = inspect_db(PSB_PATH)
 
         
-# output dictionary to csv
-output2 = pd.DataFrame.from_dict(out_dict_2, orient='index')
-output2 = output2.rename_axis('filename').reset_index()
-output2.to_csv('psb_analysis.csv')
+output = 
 
-output2.head()
+# output dictionary to csv
+output = pd.DataFrame.from_dict(out_dict, orient='index')
+output.to_csv('psb_analysis.csv')
+
+output.head()
 

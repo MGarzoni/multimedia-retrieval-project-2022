@@ -4,3 +4,4 @@ Psb-labeled-db/
 Princeton-labeled-db/
 *.png
 .DS_Store
+*.off
