@@ -102,7 +102,7 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
         file.write(off_file)
 
     # call function to extract attributes and add them to output_dictionary
-    out_dict = extract_attributes_from_mesh(mesh, output_path, outliers_range=range(3500))
+    out_dict = extract_attributes_from_mesh(mesh, output_path)
     if verbose: print("After:", out_dict)
 
     return out_dict

@@ -16,7 +16,7 @@ def extract_attributes_from_path(mesh_path, outliers_range=range(3500)):
     return extract_attributes_from_mesh(mesh, mesh_path, outliers_range)
 
 
-def extract_attributes_from_mesh(mesh, mesh_path, outliers_range = range(3500)):
+def extract_attributes_from_mesh(mesh, mesh_path, outliers_range = range(1000)):
     """Extract features from a mesh that has already been loaded"""
 
     out_dict = {"filename" : mesh_path.split('/')[-1],
