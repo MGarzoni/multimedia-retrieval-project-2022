@@ -114,11 +114,11 @@ def normalization_pipeline(path, files_dictionary, out_dir, display_mesh=False):
 
     # get eigenvalues and eigenvectors (with pca function from utils) (here value changes)
     eigenvalues, eigenvectors = pca_eigenvalues_eigenvectors(mesh)
-    print(f"=> eigenvalues for (x, y, z)\n{eigenvalues}")
-    print(f"=> eigenvectors\n{eigenvectors}")
+    # print(f"=> eigenvalues for (x, y, z)\n{eigenvalues}")
+    # print(f"=> eigenvectors\n{eigenvectors}")
 
 
-    # EXPORT MODIFIED FILE
+    # EXPORT MODIFIED MESH AS .OFF FILE INTO "NORMALIZED" FOLDER
     output_path = os.path.join(out_dir, attributes['filename']) #where the exported mesh will go
     off_file = trimesh.exchange.off.export_off(mesh)
     with open(output_path, 'w+') as file:
@@ -134,6 +134,7 @@ def normalization_pipeline(path, files_dictionary, out_dir, display_mesh=False):
 #test normalization pipeline
 
 test_path = "./psb-labeled-db/Bird/242.off"
+outlier_path = "./psb-labeled-db/Hand/185.off"
 
 csv_path = "./psb_analysis.csv"
 files_dict = attributes_csv_to_dict(csv_path)
