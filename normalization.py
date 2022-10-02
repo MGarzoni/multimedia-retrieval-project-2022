@@ -54,6 +54,7 @@ function pipeline( path, files_dictionary, out_dir, display_meshes=False ):
     return output_dictionary
 '''
 
+
 def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     """Verbose includes IMAGES"""
     
@@ -62,12 +63,18 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     
     if attributes['is_out']:
         print(attributes['filename'], "is an outlier!\n")
-    #     check if path is outlier (possibly treat this exception):
-    #         run java subdivider and get refined mesh (here num_vertices changes value)
-    #         export refined mesh to the "remeshed" directory
-    #         change variable: path = refined mesh's path
-    #         update num_vertices column #may be unnecessary since we re-extract attributes at the end
-    
+
+        # define path to the shape to remesh and path to where save the remeshed shape
+        import subprocess
+        shape_to_remesh_path = attributes['path']
+        remeshed_shape_path = f"./remeshed/remeshed-{attributes['path']}.off"
+        subdivider_command = f"java -jar catmullclark.jar {shape_to_remesh_path} {remeshed_shape_path}"
+
+        # call mccullark subdivider java program
+        subprocess.call(subdivider_command, shell=True)
+
+        # change variable: path = refined mesh's path
+        # update num_vertices column #may be unnecessary since we re-extract attributes at the end
     
     mesh = trimesh.load(path) # load mesh from path -- should load REMESHED path if it was an outlier
     
