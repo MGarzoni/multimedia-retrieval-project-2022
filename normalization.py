@@ -131,7 +131,7 @@ test_path = "./psb-labeled-db/Bird/242.off"
 outlier_path = "./psb-labeled-db/Hand/185.off"
 
 # list of paths to normalize
-paths_list = [test_path, outlier_path]
+paths_list = [outlier_path, test_path]
 
 # path of csv
 csv_path = "./psb_analysis.csv"
