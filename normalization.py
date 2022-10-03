@@ -119,7 +119,8 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
 
 
 def loop_pipeline(paths_list, csv_path):
-
+    """Run normalization pipeline on all paths in the paths_list. 
+    the csv file at csv_path is used to extract attributes about the shapes in the paths_list"""
     files_dict = attributes_csv_to_dict(csv_path)
     
     # new attributes dict, initialize
