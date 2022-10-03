@@ -12,6 +12,7 @@ import os
 import numpy as np
 import pandas as pd
 import trimesh
+import subprocess
 
 # utils
 from utils import *
@@ -65,20 +66,22 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
         print(attributes['filename'], "is an outlier!\n")
 
         # define path to the shape to remesh and path to where save the remeshed shape
-        import subprocess
-        shape_to_remesh_path = attributes['path']
-        remeshed_shape_path = f"./remeshed/remeshed-{attributes['path']}.off"
+        shape_to_remesh_path = path
+        remeshed_shape_path = f"./remeshed/remeshed-{attributes['filename']}.off"
         subdivider_command = f"java -jar catmullclark.jar {shape_to_remesh_path} {remeshed_shape_path}"
 
         # call mccullark subdivider java program
         subprocess.call(subdivider_command, shell=True)
 
         # change variable: path = refined mesh's path
+        path = remeshed_shape_path
+        
+        if verbose: print("\nRemeshed and loading updated file from", remeshed_shape_path)
         # update num_vertices column #may be unnecessary since we re-extract attributes at the end
     
     mesh = trimesh.load(path) # load mesh from path -- should load REMESHED path if it was an outlier
     
-    if verbose: print("Before:", attributes)
+    if verbose: print("Initial values:", attributes)
     
     original_mesh = mesh.copy()
     if verbose:
@@ -138,7 +141,7 @@ test_path = "./psb-labeled-db/Bird/242.off"
 outlier_path = "./psb-labeled-db/Hand/185.off"
 
 # list of paths to normalize
-paths_list = [outlier_path, test_path]
+paths_list = [outlier_path]
 
 # path of csv
 csv_path = "./psb_analysis.csv"
