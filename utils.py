@@ -4,7 +4,7 @@ import os
 import math
 import numpy as np
 import pandas as pd
-
+from matplotlib import pyplot as plt
 
 # corners of image, array used for visually consistent png export of meshes
 CORNERS = [[-0.75, -0.75, -0.75],
@@ -177,3 +177,24 @@ def pca_align(mesh, verbose=False):
     #display_mesh_with_axes(mesh3)
     
     return aligned_mesh
+
+def moment_flip(mesh, verbose=False):
+    """Flip based on moment: the greater part of each axis distribution should be in the NEGATIVE side"""
+    
+    # get centers of triangles
+    triangles = mesh.triangles_center
+    
+    #calculate the f values for each axis
+    fx, fy, fz = np.sum(
+        [ (np.sign(x)*x*x, np.sign(y)*y*y, np.sign(z)*z*z) for x,y,z in triangles],
+                        axis = 0)
+    
+    #find the corresponding signs
+    sx, sy, sz = np.sign([fx, fy, fz])
+    
+    #multiply each vertex coordinate by the sign of the corresponding f-value
+    for index in range(mesh.vertices.shape[0]):
+        mesh.vertices[index] = np.multiply(mesh.vertices[index], (sx, sy, sz))
+        
+    return mesh
+        

@@ -90,6 +90,10 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     # align pca: x axis is most variance, z axis is least variance
     mesh = pca_align(mesh)
     if verbose: save_mesh_png(mesh, "4.pca", corners = CORNERS)
+    
+    # moment test
+    mesh = moment_flip(mesh)
+    if verbose: save_mesh_png(mesh, "5.moment", corners = CORNERS)
 
     # EXPORT MODIFIED MESH AS .OFF FILE INTO "NORMALIZED" FOLDER
     output_path = os.path.join(out_dir, attributes['filename']) # where the exported mesh will go
@@ -104,7 +108,7 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     return out_dict
 
 
-def loop_pipeline(paths_list, csv_path):
+def loop_pipeline(paths_list, csv_path, verbose = False):
     """Run normalization pipeline on all paths in the paths_list. 
     the csv file at csv_path is used to extract attributes about the shapes in the paths_list"""
     files_dict = attributes_csv_to_dict(csv_path)
@@ -117,7 +121,7 @@ def loop_pipeline(paths_list, csv_path):
         filename = os.path.basename(path)
 
         # normalize and extract attributes into new dictionary
-        new_files_dict[filename] = normalization_pipeline(path, files_dict, out_dir = "./normalized", verbose=True)
+        new_files_dict[filename] = normalization_pipeline(path, files_dict, out_dir = "./normalized", verbose=verbose)
     
     # export updated attributes to new csv file
     output = pd.DataFrame.from_dict(new_files_dict, orient='index')
@@ -128,9 +132,9 @@ test_path = "./psb-labeled-db/Bird/242.off"
 outlier_path = "./psb-labeled-db/Hand/185.off"
 
 # list of paths to normalize
-paths_list = [outlier_path]
+paths_list = [test_path]
 
 # path of original csv
 csv_path = "./psb_analysis.csv"
 
-loop_pipeline(paths_list, csv_path)
+loop_pipeline(paths_list, csv_path, verbose = True)
