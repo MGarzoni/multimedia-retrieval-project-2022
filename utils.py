@@ -179,7 +179,7 @@ def pca_align(mesh, verbose=False):
     return aligned_mesh
 
 def moment_flip(mesh, verbose=False):
-    """Flip based on moment: the greater part of each axis distribution should be in the NEGATIVE side"""
+    """Flip based on moment: the greater part of the object should be on the POSITIVE side of each axis"""
     
     # get centers of triangles
     triangles = mesh.triangles_center
@@ -197,4 +197,13 @@ def moment_flip(mesh, verbose=False):
         mesh.vertices[index] = np.multiply(mesh.vertices[index], (sx, sy, sz))
         
     return mesh
-        
+
+def test_mesh_transformation(function):
+    """Takes a hand mesh and transports it so that it is highly off-center. 
+    Then exports before and after PNG for the given function"""
+    
+    mesh = trimesh.load("./psb-labeled-db/Hand/185.off")
+    mesh.vertices += (-0.5,-0.5,-0.5)
+    newmesh = mesh.copy()
+    before_after(mesh, function(newmesh), corners = CORNERS)
+    
