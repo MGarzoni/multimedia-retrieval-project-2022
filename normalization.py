@@ -122,6 +122,8 @@ def loop_pipeline(paths_list, csv_path, verbose = False):
 
         # normalize and extract attributes into new dictionary
         new_files_dict[filename] = normalization_pipeline(path, files_dict, out_dir = "./normalized", verbose=verbose)
+        
+        print("Processed", filename)
     
     # export updated attributes to new csv file
     output = pd.DataFrame.from_dict(new_files_dict, orient='index')
@@ -137,4 +139,4 @@ paths_list = [test_path]
 # path of original csv
 csv_path = "./psb_analysis.csv"
 
-loop_pipeline(paths_list, csv_path, verbose = True)
+#loop_pipeline(paths_list, csv_path, verbose = True)

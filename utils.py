@@ -168,7 +168,7 @@ def pca_align(mesh, verbose=False):
         # calculate new x, y, z coordinates and put into the new mesh
         aligned_mesh.vertices[index] = np.dot(point, e1), np.dot(point, e2), np.dot(point, np.cross(e1, e2))
             
-    before_after(mesh, aligned_mesh, corners = CORNERS)
+    if verbose: before_after(mesh, aligned_mesh, corners = CORNERS)
     
     if verbose:
         new_pca_values, new_pca_vectors = pca_eigenvalues_eigenvectors(aligned_mesh)
@@ -184,7 +184,7 @@ def moment_flip(mesh, verbose=False):
     # get centers of triangles
     triangles = mesh.triangles_center
     
-    #calculate the f values for each axis
+    #calculate the sum of f values for each axis
     fx, fy, fz = np.sum(
         [ (np.sign(x)*x*x, np.sign(y)*y*y, np.sign(z)*z*z) for x,y,z in triangles],
                         axis = 0)
@@ -204,6 +204,7 @@ def test_mesh_transformation(function):
     
     mesh = trimesh.load("./psb-labeled-db/Hand/185.off")
     mesh.vertices += (-0.5,-0.5,-0.5)
+    mesh.vertices *= (1.2, 1.2, 1.2)
     newmesh = mesh.copy()
     before_after(mesh, function(newmesh), corners = CORNERS)
     
