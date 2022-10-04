@@ -6,6 +6,16 @@ import numpy as np
 import pandas as pd
 
 
+# corners of image, array used for visually consistent png export of meshes
+CORNERS = [[-0.75, -0.75, -0.75],
+       [ 0.75, -0.75, -0.75],
+       [ 0.75,  0.75, -0.75],
+       [-0.75,  0.75, -0.75],
+       [-0.75, -0.75,  0.75],
+       [ 0.75, -0.75,  0.75],
+       [ 0.75,  0.75,  0.75],
+       [-0.75,  0.75,  0.75]]
+
 def extract_attributes_from_path(mesh_path, outliers_range=range(3500)):
     """Given a path, loads the mesh, checks if it's an outlier,
     and then adds required attributes of mesh to the out_dict to be returned;
@@ -60,6 +70,12 @@ def scale_to_unit(mesh):
 
     return scaled_mesh
 
+
+def display_mesh_with_axes(mesh):
+    scene = trimesh.Scene()
+    scene.add_geometry(mesh)
+    scene.add_geometry(trimesh.creation.axis(axis_length = 1)) #add x, y, z axes to scene
+    scene.show(viewer='gl')
 
 def save_mesh_png(mesh, filename, corners = None):
     """Save mesh object as png along with the x,y,z axes visualized"""
@@ -122,3 +138,42 @@ def pca_eigenvalues_eigenvectors(mesh):
     eigenvalues, eigenvectors = np.linalg.eig(A_cov)
 
     return eigenvalues, eigenvectors
+
+
+def pca_align(mesh, verbose=False):
+    """Largest variance will align with x axis, least variance will align with z axis. 
+    Use pca eigenvectors and eigenvalues to project correctly."""
+    
+    # find PCA values
+    pca_values, pca_vectors = pca_eigenvalues_eigenvectors(mesh)
+    
+    # we now sort eigenvalues by ascending order, saving the index of each rank position:
+    ascend_order = np.argsort(pca_values)
+    
+    if verbose: print("PCA before alignment\n", pca_values, pca_vectors)
+    
+    # e1, e2, e3 based on the order of the eigenvalues magnitudes
+    # NOTE: e1, e2, e3 all have magnitude 1
+    e3, e2, e1 = (pca_vectors[:,index] for index in ascend_order) #the eigenvectors are the COLUMNS of the vector matrix
+    
+    # create new mesh to store pca-aligned object
+    aligned_mesh = mesh.copy()
+    # set all vertices to 0
+    aligned_mesh.vertices = np.zeros(mesh.vertices.shape)
+    
+    
+    #calculate new mesh's vertex coordinates based on PCA dot product formulas
+    for index in range(mesh.vertices.shape[0]): #loop through vertices
+        point = mesh.vertices[index] #take point from original mesh
+        # calculate new x, y, z coordinates and put into the new mesh
+        aligned_mesh.vertices[index] = np.dot(point, e1), np.dot(point, e2), np.dot(point, np.cross(e1, e2))
+            
+    before_after(mesh, aligned_mesh, corners = CORNERS)
+    
+    if verbose:
+        new_pca_values, new_pca_vectors = pca_eigenvalues_eigenvectors(aligned_mesh)
+        print("PCA after alignment\n", new_pca_values, new_pca_vectors)
+    
+    #display_mesh_with_axes(mesh3)
+    
+    return aligned_mesh

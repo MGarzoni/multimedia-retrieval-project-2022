@@ -17,15 +17,7 @@ import subprocess
 # utils
 from utils import *
 
-# corners of image, array used for visually consistent png export of meshes
-corners = [[-1, -1, -1],
-       [ 1, -1, -1],
-       [ 1,  1, -1],
-       [-1,  1, -1],
-       [-1, -1,  1],
-       [ 1, -1,  1],
-       [ 1,  1,  1],
-       [-1,  1,  1]]
+
 
 
 '''
@@ -62,48 +54,42 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     # load attributes of filename (from files_dictionary)
     attributes = files_dictionary[os.path.basename(path)]
     
-    if attributes['is_out']:
+    if attributes['is_out']: #if it's an outlier, remesh
         print(attributes['filename'], "is an outlier!\n")
 
         # define path to the shape to remesh and path to where save the remeshed shape
         shape_to_remesh_path = path
         remeshed_shape_path = f"./remeshed/remeshed-{attributes['filename']}.off"
+        
+        #the command that will be run in command line
         subdivider_command = f"java -jar catmullclark.jar {shape_to_remesh_path} {remeshed_shape_path}"
 
         # call mccullark subdivider java program
         subprocess.call(subdivider_command, shell=True)
 
-        # change variable: path = refined mesh's path
+        # update variable: path should now point to refined mesh's path, not the original mesh
         path = remeshed_shape_path
         
         if verbose: print("\nRemeshed and loading updated file from", remeshed_shape_path)
-        # update num_vertices column #may be unnecessary since we re-extract attributes at the end
     
     mesh = trimesh.load(path) # load mesh from path -- should load REMESHED path if it was an outlier
     
-    if verbose: print("Initial values:", attributes)
+    if verbose: print("Initial attributes:", attributes)
     
-    original_mesh = mesh.copy()
     if verbose:
-        save_mesh_png(mesh, "1.original", corners = corners)
+        save_mesh_png(mesh, "1.original", corners = CORNERS)
 
     # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
     mesh = center_at_origin(mesh)
-    if verbose:
-        save_mesh_png(mesh, "2.translated", corners = corners)
-    translated_mesh = mesh.copy()
+    if verbose: save_mesh_png(mesh, "2.translated", corners = CORNERS)
 
     # scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
     mesh = scale_to_unit(mesh)
-    if verbose:
-        save_mesh_png(mesh, "3.scaled", corners = corners)
-    scaled_mesh = mesh.copy()
+    if verbose: save_mesh_png(mesh, "3.scaled", corners = CORNERS)
 
-    # get eigenvalues and eigenvectors (with pca function from utils) (here value changes)
-    eigenvalues, eigenvectors = pca_eigenvalues_eigenvectors(mesh)
-    # print(f"=> eigenvalues for (x, y, z)\n{eigenvalues}")
-    # print(f"=> eigenvectors\n{eigenvectors}")
-
+    # align pca: x axis is most variance, z axis is least variance
+    mesh = pca_align(mesh)
+    if verbose: save_mesh_png(mesh, "4.pca", corners = CORNERS)
 
     # EXPORT MODIFIED MESH AS .OFF FILE INTO "NORMALIZED" FOLDER
     output_path = os.path.join(out_dir, attributes['filename']) # where the exported mesh will go
@@ -113,7 +99,7 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
 
     # call function to extract attributes and add them to output_dictionary
     out_dict = extract_attributes_from_mesh(mesh, output_path)
-    if verbose: print("After:", out_dict)
+    if verbose: print("Final attributes:", out_dict)
 
     return out_dict
 
@@ -144,7 +130,7 @@ outlier_path = "./psb-labeled-db/Hand/185.off"
 # list of paths to normalize
 paths_list = [outlier_path]
 
-# path of csv
+# path of original csv
 csv_path = "./psb_analysis.csv"
 
 loop_pipeline(paths_list, csv_path)
