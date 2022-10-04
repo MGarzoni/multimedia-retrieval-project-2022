@@ -12,6 +12,7 @@ import os
 import numpy as np
 import pandas as pd
 import trimesh
+import subprocess
 
 # utils
 from utils import *
@@ -78,7 +79,7 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     
     mesh = trimesh.load(path) # load mesh from path -- should load REMESHED path if it was an outlier
     
-    if verbose: print("Before:", attributes)
+    if verbose: print("Initial values:", attributes)
     
     original_mesh = mesh.copy()
     if verbose:
@@ -116,7 +117,8 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
 
 
 def loop_pipeline(paths_list, csv_path):
-
+    """Run normalization pipeline on all paths in the paths_list. 
+    the csv file at csv_path is used to extract attributes about the shapes in the paths_list"""
     files_dict = attributes_csv_to_dict(csv_path)
     
     # new attributes dict, initialize
@@ -138,7 +140,7 @@ test_path = "./psb-labeled-db/Bird/242.off"
 outlier_path = "./psb-labeled-db/Hand/185.off"
 
 # list of paths to normalize
-paths_list = [test_path, outlier_path]
+paths_list = [outlier_path]
 
 # path of csv
 csv_path = "./psb_analysis.csv"
