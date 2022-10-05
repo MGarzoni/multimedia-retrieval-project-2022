@@ -1,3 +1,2 @@
 ,filename,path,category,num_faces,num_vertices,faces_type,axis_aligned_bounding_box,is_out,centroid
-185.off,185.off,./normalized/185.off,normalized,29844,14924,triangles,[0.60929699 0.21376309 1.        ],False,[ 3.70234228e-18 -1.66796176e-18  7.04259019e-16]
-242.off,242.off,./normalized/242.off,normalized,15694,7849,triangles,[1.         0.44169957 0.71436493],False,[1.23718573e-17 9.18547992e-17 1.54780463e-17]
+242.off,242.off,./normalized/242.off,normalized,15694,7849,triangles,[1.00000862 0.69214687 0.41106541],False,[-9.46440907e-18 -3.15475688e-16  1.26299237e-16]

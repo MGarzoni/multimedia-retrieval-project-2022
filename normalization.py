@@ -17,15 +17,7 @@ import subprocess
 # utils
 from utils import *
 
-# corners of image, array used for visually consistent png export of meshes
-corners = [[-1, -1, -1],
-       [ 1, -1, -1],
-       [ 1,  1, -1],
-       [-1,  1, -1],
-       [-1, -1,  1],
-       [ 1, -1,  1],
-       [ 1,  1,  1],
-       [-1,  1,  1]]
+
 
 
 '''
@@ -62,46 +54,57 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     # load attributes of filename (from files_dictionary)
     attributes = files_dictionary[os.path.basename(path)]
     
-    if attributes['is_out']:
+    if attributes['is_out']: #if it's an outlier, remesh
         print(attributes['filename'], "is an outlier!\n")
 
         # define path to the shape to remesh and path to where save the remeshed shape
+<<<<<<< HEAD
         import subprocess
         shape_to_remesh_path = attributes['path']
         remeshed_shape_path = f"./remeshed/remeshed-{attributes['path']}.off"
+=======
+        shape_to_remesh_path = path
+        remeshed_shape_path = f"./remeshed/remeshed-{attributes['filename']}.off"
+        
+        #the command that will be run in command line
+>>>>>>> 886ea8075a2bc05f1955de9320346c51836a199f
         subdivider_command = f"java -jar catmullclark.jar {shape_to_remesh_path} {remeshed_shape_path}"
 
         # call mccullark subdivider java program
         subprocess.call(subdivider_command, shell=True)
 
+<<<<<<< HEAD
         # change variable: path = refined mesh's path
         # update num_vertices column #may be unnecessary since we re-extract attributes at the end
+=======
+        # update variable: path should now point to refined mesh's path, not the original mesh
+        path = remeshed_shape_path
+        
+        if verbose: print("\nRemeshed and loading updated file from", remeshed_shape_path)
+>>>>>>> 886ea8075a2bc05f1955de9320346c51836a199f
     
     mesh = trimesh.load(path) # load mesh from path -- should load REMESHED path if it was an outlier
     
-    if verbose: print("Initial values:", attributes)
+    if verbose: print("Initial attributes:", attributes)
     
-    original_mesh = mesh.copy()
-    if verbose:
-        save_mesh_png(mesh, "1.original", corners = corners)
+    if verbose: # save original as png (this is already AFTER remeshing it if it is an outlier)
+        save_mesh_png(mesh, "1.original", corners = CORNERS)
 
     # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
     mesh = center_at_origin(mesh)
-    if verbose:
-        save_mesh_png(mesh, "2.translated", corners = corners)
-    translated_mesh = mesh.copy()
+    if verbose: save_mesh_png(mesh, "2.translated", corners = CORNERS)
 
     # scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
     mesh = scale_to_unit(mesh)
-    if verbose:
-        save_mesh_png(mesh, "3.scaled", corners = corners)
-    scaled_mesh = mesh.copy()
+    if verbose: save_mesh_png(mesh, "3.scaled", corners = CORNERS)
 
-    # get eigenvalues and eigenvectors (with pca function from utils) (here value changes)
-    eigenvalues, eigenvectors = pca_eigenvalues_eigenvectors(mesh)
-    # print(f"=> eigenvalues for (x, y, z)\n{eigenvalues}")
-    # print(f"=> eigenvectors\n{eigenvectors}")
-
+    # align pca: x axis is most variance, z axis is least variance
+    mesh = pca_align(mesh)
+    if verbose: save_mesh_png(mesh, "4.pca", corners = CORNERS)
+    
+    # moment test
+    mesh = moment_flip(mesh)
+    if verbose: save_mesh_png(mesh, "5.moment", corners = CORNERS)
 
     # EXPORT MODIFIED MESH AS .OFF FILE INTO "NORMALIZED" FOLDER
     output_path = os.path.join(out_dir, attributes['filename']) # where the exported mesh will go
@@ -111,12 +114,12 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
 
     # call function to extract attributes and add them to output_dictionary
     out_dict = extract_attributes_from_mesh(mesh, output_path)
-    if verbose: print("After:", out_dict)
+    if verbose: print("Final attributes:", out_dict)
 
     return out_dict
 
 
-def loop_pipeline(paths_list, csv_path):
+def loop_pipeline(paths_list, csv_path, verbose = False):
     """Run normalization pipeline on all paths in the paths_list. 
     the csv file at csv_path is used to extract attributes about the shapes in the paths_list"""
     files_dict = attributes_csv_to_dict(csv_path)
@@ -129,20 +132,30 @@ def loop_pipeline(paths_list, csv_path):
         filename = os.path.basename(path)
 
         # normalize and extract attributes into new dictionary
-        new_files_dict[filename] = normalization_pipeline(path, files_dict, out_dir = "./normalized", verbose=True)
+        new_files_dict[filename] = normalization_pipeline(path, files_dict, out_dir = "./normalized", verbose=verbose)
+        
+        print("Processed", filename)
     
     # export updated attributes to new csv file
     output = pd.DataFrame.from_dict(new_files_dict, orient='index')
     output.to_csv('./normalized/normalized_attributes.csv')
     
-# test normalization pipeline
-test_path = "./psb-labeled-db/Bird/242.off"
-outlier_path = "./psb-labeled-db/Hand/185.off"
 
-# list of paths to normalize
-paths_list = [outlier_path]
+# this testing stuff should only be run when this py file is run directly, not when things are being imported
+if __name__ == "__main__":
+    
+    # test normalization pipeline
+    test_path = "./psb-labeled-db/Bird/242.off"
+    outlier_path = "./psb-labeled-db/Hand/185.off"
 
-# path of csv
-csv_path = "./psb_analysis.csv"
+    # list of paths to normalize
+    paths_list = [test_path]
 
+<<<<<<< HEAD
 loop_pipeline(paths_list, csv_path)
+=======
+    # path of original csv
+    csv_path = "./psb_analysis.csv"
+    
+    loop_pipeline(paths_list, csv_path, verbose = True)
+>>>>>>> 886ea8075a2bc05f1955de9320346c51836a199f
