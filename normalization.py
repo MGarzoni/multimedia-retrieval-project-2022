@@ -76,7 +76,7 @@ def normalization_pipeline(path, files_dictionary, out_dir, verbose=False):
     
     if verbose: print("Initial attributes:", attributes)
     
-    if verbose:
+    if verbose: # save original as png (this is already AFTER remeshing it if it is an outlier)
         save_mesh_png(mesh, "1.original", corners = CORNERS)
 
     # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
@@ -129,14 +129,18 @@ def loop_pipeline(paths_list, csv_path, verbose = False):
     output = pd.DataFrame.from_dict(new_files_dict, orient='index')
     output.to_csv('./normalized/normalized_attributes.csv')
     
-# test normalization pipeline
-test_path = "./psb-labeled-db/Bird/242.off"
-outlier_path = "./psb-labeled-db/Hand/185.off"
 
-# list of paths to normalize
-paths_list = [test_path]
+# this testing stuff should only be run when this py file is run directly, not when things are being imported
+if __name__ == "__main__":
+    
+    # test normalization pipeline
+    test_path = "./psb-labeled-db/Bird/242.off"
+    outlier_path = "./psb-labeled-db/Hand/185.off"
 
-# path of original csv
-csv_path = "./psb_analysis.csv"
+    # list of paths to normalize
+    paths_list = [test_path]
 
-#loop_pipeline(paths_list, csv_path, verbose = True)
+    # path of original csv
+    csv_path = "./psb_analysis.csv"
+    
+    loop_pipeline(paths_list, csv_path, verbose = True)
