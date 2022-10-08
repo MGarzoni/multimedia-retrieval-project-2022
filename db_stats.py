@@ -7,7 +7,7 @@ Use output of filter (csv file) to find out:
 
 Use the viewer constructed in step 1 to show an average shape and a few such outliers (if any)
 '''
-
+import matplotlib
 # import libraries
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -27,6 +27,24 @@ psb_df = pd.read_csv(psb_analysis_in)
 # inspect dataframe
 print(psb_df.describe())
 print(psb_df.info())
+
+plt.style.use('grayscale')
+
+matplotlib.use('tkAgg')
+
+# Save the vertex counts distribution
+counts, bins = np.histogram(psb_df['num_vertices'], bins=100)
+plt.hist(bins[:-1], bins, weights=counts)
+plt.title('Histogram of vertex counts')
+plt.savefig('vertex_hist.pdf')
+plt.close()
+
+# Save the faces count distribution
+counts, bins = np.histogram(psb_df['num_faces'], bins=100)
+plt.hist(bins[:-1], bins, weights=counts)
+plt.title('Histogram of face counts')
+plt.savefig('face_hist.pdf')
+plt.close()
 
 # plot distribution of vertices and faces across PSB DB
 sns.kdeplot(psb_df['num_vertices'], color='r', shade=True, label='num_vertices')
