@@ -1,14 +1,11 @@
 import os
 import trimesh
 import random
-
-# DB PATHS
-PRINCETON_PATH = "./princeton-labeled-db/"
-PSB_PATH = "./psb-labeled-db/"
+from utils import *
 
 # step 1: function to load and display a random mesh from given db_path
 def open_and_display_mesh(db_path):
-    categories = os.listdir(db_path)
+    categories = [cat for cat in os.listdir(db_path) if len(cat)!=0]
     rand_cat = random.choice(categories)
 
     # consider only 3D mesh file types and pick a random entity
@@ -19,4 +16,4 @@ def open_and_display_mesh(db_path):
     mesh = trimesh.load(os.path.join(db_path, rand_cat, rand_ent))
     return mesh.show(viewer='gl')
     
-open_and_display_mesh(PSB_PATH)
+open_and_display_mesh(TEST_DATA_PATH)

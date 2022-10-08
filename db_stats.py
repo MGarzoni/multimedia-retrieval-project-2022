@@ -17,11 +17,11 @@ import trimesh
 import os
 import seaborn as sns
 
-#import our util functions
+# import our util functions
 from utils import *
 
 # import and load analysis data
-psb_analysis_in = './psb_analysis.csv'
+psb_analysis_in = './psb_attributes.csv'
 psb_df = pd.read_csv(psb_analysis_in)
 
 # inspect dataframe

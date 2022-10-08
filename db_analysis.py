@@ -1,12 +1,6 @@
 import os
-import trimesh
 import pandas as pd
-
-import utils
-
-# DB PATHS
-PRINCETON_PATH = "./princeton-labeled-db/"
-PSB_PATH = "./psb-labeled-db/"
+from utils import *
 
 # step 2.1: function to analyse shapes from database
 # returns a dict of categories and objects along with desired attributes
@@ -21,19 +15,18 @@ def inspect_db(db_path):
             # for each object (filename)
             for filename in os.listdir(os.path.join(db_path, dirname)):
     
-                # consider only 3D mesh files and use trimesh to load the mesh
+                # consider only 3D mesh files
                 if filename.endswith(('.ply', '.obj', '.off')):
                     
                     full_path = os.path.join(db_path, dirname, filename)
     
                     # save a dict containing all the desired attributes
-                    db_info[filename] = utils.extract_attributes_from_path(full_path)
+                    db_info[filename] = extract_attributes_from_path(full_path)
 
     return db_info
 
-out_dict = inspect_db(PSB_PATH)
-
 # output dictionary to csv
+out_dict = inspect_db(PSB_PATH)
 output = pd.DataFrame.from_dict(out_dict, orient='index')
-output.to_csv('psb_analysis.csv')
+output.to_csv("./attributes/original-PSB-attributes.csv")
 output.head()

@@ -16,17 +16,20 @@ CORNERS = [[-0.75, -0.75, -0.75],
        [ 0.75,  0.75,  0.75],
        [-0.75,  0.75,  0.75]]
 
-def extract_attributes_from_path(mesh_path, outliers_range=range(3500)):
+# db paths
+PRINCETON_PATH = "./princeton-labeled-db/"
+PSB_PATH = "./psb-labeled-db/"
+TEST_DATA_PATH = "./test-data-db/"
+
+def extract_attributes_from_path(mesh_path):
     """Given a path, loads the mesh, checks if it's an outlier,
-    and then adds required attributes of mesh to the out_dict to be returned;
-    can also set the outlier range (default is (0, 3500))."""
+    and then adds required attributes of mesh to the out_dict to be returned"""
 
     mesh = trimesh.load(mesh_path)
 
-    return extract_attributes_from_mesh(mesh, mesh_path, outliers_range)
+    return extract_attributes_from_mesh(mesh, mesh_path)
 
-
-def extract_attributes_from_mesh(mesh, mesh_path, outliers_range = range(1000)):
+def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(3500)):
     """Extract features from a mesh that has already been loaded"""
 
     out_dict = {"filename" : mesh_path.split('/')[-1],
@@ -41,15 +44,13 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range = range(1000)):
     
     return out_dict
     
-
 def attributes_csv_to_dict(csv_path):
     """Turn csv file of attributes into dictionary of dictionaries indexed by filename, each attribute is a key in each file's dictionary"""
 
     files_df = pd.read_csv(csv_path)
-    files_dict = {row['filename']:row.to_dict() for index, row in files_df.iterrows()}
+    attributes_dict = {row['filename']:row.to_dict() for index, row in files_df.iterrows()}
 
-    return files_dict
-
+    return attributes_dict
 
 def center_at_origin(mesh):
     """Given a trimesh object,
@@ -60,7 +61,6 @@ def center_at_origin(mesh):
 
     return translated_mesh
 
-
 def scale_to_unit(mesh):
     """Return mesh scaled to unit cube"""
 
@@ -69,7 +69,6 @@ def scale_to_unit(mesh):
     scaled_mesh.apply_scale((1/maxsize, 1/maxsize, 1/maxsize))
 
     return scaled_mesh
-
 
 def display_mesh_with_axes(mesh):
     scene = trimesh.Scene()
@@ -106,7 +105,6 @@ def save_mesh_png(mesh, filename, corners = None):
         f.write(png)
         f.close()
 
-
 def save_image_of_path(path, tag=None):
     """Save shape at path to .png, with tag added after underscore"""
 
@@ -118,7 +116,6 @@ def save_image_of_path(path, tag=None):
     
     save_mesh_png(mesh, file_name)
     
-
 def before_after(mesh1, mesh2, corners = None):
     """Save "before.png" and "after.png" with two meshes;
     Camera bounding box set by SECOND image"""
@@ -129,7 +126,6 @@ def before_after(mesh1, mesh2, corners = None):
     save_mesh_png(mesh1, "before", corners = corners)
     save_mesh_png(mesh2, "after", corners = corners)
     
-
 def pca_eigenvalues_eigenvectors(mesh):
     """Matrix of points of shape (3, nr points)"""
 
@@ -138,7 +134,6 @@ def pca_eigenvalues_eigenvectors(mesh):
     eigenvalues, eigenvectors = np.linalg.eig(A_cov)
 
     return eigenvalues, eigenvectors
-
 
 def pca_align(mesh, verbose=False):
     """Largest variance will align with x axis, least variance will align with z axis. 
@@ -162,7 +157,7 @@ def pca_align(mesh, verbose=False):
     aligned_mesh.vertices = np.zeros(mesh.vertices.shape)
     
     
-    #calculate new mesh's vertex coordinates based on PCA dot product formulas
+    # calculate new mesh's vertex coordinates based on PCA dot product formulas
     for index in range(mesh.vertices.shape[0]): #loop through vertices
         point = mesh.vertices[index] #take point from original mesh
         # calculate new x, y, z coordinates and put into the new mesh
@@ -174,7 +169,7 @@ def pca_align(mesh, verbose=False):
         new_pca_values, new_pca_vectors = pca_eigenvalues_eigenvectors(aligned_mesh)
         print("PCA after alignment\n", new_pca_values, new_pca_vectors)
     
-    #display_mesh_with_axes(mesh3)
+    # display_mesh_with_axes(mesh3)
     
     return aligned_mesh
 
@@ -184,15 +179,15 @@ def moment_flip(mesh, verbose=False):
     # get centers of triangles
     triangles = mesh.triangles_center
     
-    #calculate the sum of f values for each axis
+    # calculate the sum of f values for each axis
     fx, fy, fz = np.sum(
         [ (np.sign(x)*x*x, np.sign(y)*y*y, np.sign(z)*z*z) for x,y,z in triangles],
                         axis = 0)
     
-    #find the corresponding signs
+    # find the corresponding signs
     sx, sy, sz = np.sign([fx, fy, fz])
     
-    #multiply each vertex coordinate by the sign of the corresponding f-value
+    # multiply each vertex coordinate by the sign of the corresponding f-value
     for index in range(mesh.vertices.shape[0]):
         mesh.vertices[index] = np.multiply(mesh.vertices[index], (sx, sy, sz))
         
@@ -207,4 +202,3 @@ def test_mesh_transformation(function):
     mesh.vertices *= (1.2, 1.2, 1.2)
     newmesh = mesh.copy()
     before_after(mesh, function(newmesh), corners = CORNERS)
-    
