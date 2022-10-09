@@ -19,7 +19,6 @@ CORNERS = [[-0.75, -0.75, -0.75],
 # db paths
 PRINCETON_PATH = "./princeton-labeled-db/"
 PSB_PATH = "./psb-labeled-db/"
-TEST_DATA_PATH = "./test-data-db/"
 
 def extract_attributes_from_path(mesh_path):
     """Given a path, loads the mesh, checks if it's an outlier,

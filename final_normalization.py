@@ -5,7 +5,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 def normalize_db(database, original_csv, out_dir, verbose=False):
-    """Add description"""
+    """This function takes a database, iteratively gets a shape from a category and
+    applies normalization steps to the mesh; if the shape is an outlier, the remeshing via 
+    catmullclark subvider is triggered; the normalized mesh is then exported as a new .off file and 
+    then we call the extract_attributes_from_mesh util function and export the new csv holding the 
+    normalized attributes."""
 
     # call utils function to turn csv file of attributes into dict of dicts indexed by filename
     attributes_dict = attributes_csv_to_dict(original_csv)
@@ -23,23 +27,17 @@ def normalize_db(database, original_csv, out_dir, verbose=False):
                 filename = os.path.basename(full_path)
                 # print(filename)
 
-                # this excapetion handling is for the TEST_DATA_PATH because it doesn't contain all the shapes from the other
-                # try:
-                #     shape_attributes = attributes_dict[filename]
-                # except:
-                #     KeyError
-
                 shape_attributes = attributes_dict[filename]
                 # print(shape_attributes)
-
+                
                 # if it's an outlier, remesh and save remeshed to out_dir
                 if shape_attributes['is_out']:
                     # print(f"\n{shape_attributes['filename']} is an outlier!")
 
                     # define path to the shape to remesh and set subdivider command so that it overwrites the file
-                    shape_to_remesh_path = os.path.join(os.getcwd(), shape_attributes['path'])
+                    shape_to_remesh_path = os.path.join(os.getcwd(), shape_attributes['path'][1:])
                     # print(f"shape_to_remesh_path --> {shape_to_remesh_path}")
-                    remeshed_shape_path = os.path.join(os.getcwd(), out_dir, os.path.split(os.path.split(shape_attributes['path'])[0])[1])
+                    remeshed_shape_path = os.path.join(os.getcwd(), out_dir, os.path.split(os.path.split(shape_attributes['path'][1:])[0])[1])
                     # print(f"remeshed_shape_path --> {remeshed_shape_path}")
                     subdivider_command = f"java -jar catmullclark.jar {shape_to_remesh_path} {remeshed_shape_path}"
                     # print(f"subdivider_command --> {subdivider_command}")
@@ -81,6 +79,8 @@ def normalize_db(database, original_csv, out_dir, verbose=False):
                 # print(f"\nout_dir --> {out_dir}")
                 # print(f"filename --> {filename}")
                 # print(f"os.path.join(out_dir, filename) --> {os.path.join(out_dir, filename)}")
+
+                # this one below should be tweaked to create a folder for each mesh before saving, and then save it an the correct category folder
                 with open(os.path.join(out_dir, filename), 'w+') as fp:
                     fp.write(off_file)
 
@@ -95,7 +95,7 @@ def normalize_db(database, original_csv, out_dir, verbose=False):
     # export updated attributes to new csv file
     output = pd.DataFrame.from_dict(new_files_dict, orient='index')
     output.to_csv(f"./attributes/normalized-PSB-attributes.csv")
-    print("SAVED TO CSV")
+    print("Normalized attributes successfully exported to csv.")
 
 original_psb_csv = "./attributes/original-PSB-attributes.csv"
 out_dir = "./normalized"
@@ -116,3 +116,29 @@ sns.kdeplot([len(centroid) for centroid in after['centroid']], color='g', shade=
 plt.title("Distribution of centroids before and after normalization pipeline")
 plt.legend()
 plt.show()
+
+# save visualization of meshes before and after normalization
+mesh_before = trimesh.load("./psb-labeled-db/FourLeg/397.off")
+mesh_after = trimesh.load("./normalized/397.off")
+before_after(mesh_before, mesh_after)
+
+# display before and after side by side
+img_before = "./pics/before.png"
+img_after = "./pics/after.png"
+f, axs = plt.subplots(1,2)
+axs[0].imshow(img_before.astype('float64'))
+axs[1].imshow(img_after.astype('float64'))
+
+import cv2
+fig = plt.figure(figsize=(10, 8))
+rows, cols = 1, 2
+img1 = cv2.imread(img_before)
+img2 = cv2.imread(img_after)
+fig.add_subplot(rows, cols, 1)
+plt.imshow(img1)
+plt.axis('off')
+plt.title("Before normalization")
+fig.add_subplot(rows, cols, 2)
+plt.imshow(img2)
+plt.axis('off')
+plt.title("After normalization")
