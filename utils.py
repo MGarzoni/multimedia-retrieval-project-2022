@@ -39,7 +39,9 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(3500)):
                 "faces_type" : 'triangles',
                 "axis_aligned_bounding_box" : mesh.bounding_box.extents,
                 "is_out" : True if len(mesh.vertices) in outliers_range else False,
-                "centroid" : mesh.centroid}
+                "centroid" : mesh.centroid,
+                "area" : mesh.area,
+                "face_area": mesh.area_faces}
     
     return out_dict
     

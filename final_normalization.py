@@ -142,3 +142,25 @@ fig.add_subplot(rows, cols, 2)
 plt.imshow(img2)
 plt.axis('off')
 plt.title("After normalization")
+
+'''
+SHOULD ALSO CHECK THESE (and also comparing face_area after):
+
+Steps 2 of the assignment involve several normalizations (of the shapes sampling densities, sizes, and poses). How to check if you implemented such normalizations correctly?
+
+This can be done generically (and easily) for all above cases. Consider any quantity Q that is measured for a shape, such as
+
+    number of sampling points (vertices)
+    size of bounding box (computed via its diagonal)
+    position of bounding box (distance of its center to the origin)
+    pose (absolute value of cosine of angle between major eigenvector and, say, the X axis) 
+
+All these are scalar quantities.
+
+What does a good normalization do? It reduces the variance of Q. Hence, to check if your normalization works OK, you can compute an indication of Q's variance before and then after the normalization, and compare them. If variance drops significantly, the normalization worked properly.
+
+You can estimate this variance in several ways. From more aggregated (less informative) to less aggregated (more informative):
+
+    compute the average and standard deviation of Q: The standard deviation should drop after normalization. The average indicates the value around which normalization brings the shapes.
+    compute a histogram of Q over a fixed number of bins: Normalization should make the histogram more pointy, that is, having (ideally) a single large peak and being nearly zero away from that peak. 
+'''
