@@ -1,15 +1,3 @@
-"""
-Extract the following descriptors and add them to the attributes files:
-    Area A  		number of pixels inside the segmented shape
-    Perimeter l  		number of pixels along the boundary of A
-    Compactness c 	l2/(4pA); how close is the shape to a disk (circle)
-    Circularity  		1/c; basically same as compactness, just a different scale
-    Centroid  		average of (x,y) coordinates of all pixels in shape
-    Rectangularity 	 	A/AOBB; how close to a rectangle the shape is (OBB=oriented bounding box)
-    Diameter  		largest distance between any two contour points
-    Eccentricity  		|1|/| 2|, where 1 and 2 are the eigenvalues of the shape covariance matrix (in 2D, similar for 3D)
-
-"""
 
 """
 Compute the following 3D elementary descriptors presented in Module 4: Feature extraction:
@@ -36,7 +24,6 @@ Next, bin the ranges of these descriptors on a fixed number of bins B, e.g., 8..
 This gives you a B-dimensional descriptor.
 """
 
-
 import trimesh
 import random
 import numpy as np
@@ -50,21 +37,43 @@ compactness = pow(area, 3) / pow(volume, 2)
 # diameter
 # eccentricity
 
-def calculate_a3(vertices):
+def calculate_a3(rand_mesh_vertices):
+    '''angle between 3 random vertices'''
     # taken from: https://stackoverflow.com/a/35178910
 
-    ba = vertices[0] - vertices[1]
-    bc = vertices[2] - vertices[1]
+    ba = rand_mesh_vertices[0] - rand_mesh_vertices[1]
+    bc = rand_mesh_vertices[2] - rand_mesh_vertices[1]
 
     cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
     angle = np.arccos(cosine_angle)
 
     return np.degrees(angle)
-a3 = calculate_a3(random.choice(mesh.vertices))
-d1 = np.sqrt(np.sum(np.square(mesh.centroid - random.choice(random.choice(mesh.vertices)))))
-d2 = np.sqrt(np.sum(np.square(random.choice(random.choice(mesh.vertices)), random.choice(random.choice(mesh.vertices)))))
-print(d2)
+calculate_a3(random.choice(mesh.vertices))
 
-d3 = np.sqrt()
-# d3
-# d4
+def calculate_d1(mesh_vertices):
+    '''distance between barycenter and random vertex'''
+    return np.sqrt(np.sum(np.square(mesh.centroid - random.choice(random.choice(mesh_vertices)))))
+calculate_d1(mesh.vertices)
+
+def calculate_d2(mesh_vertices):
+    '''square root of area of triangle given by 3 random vertices'''
+    return np.sqrt(np.sum(np.square(random.choice(mesh_vertices), random.choice(mesh_vertices))))
+
+def calculate_d3(mesh_vertices):
+    '''square root of area of triangle given by 3 random vertices'''
+    v1 = random.choice(mesh_vertices)
+    v2 = random.choice(mesh_vertices)
+    x1, x2, x3 = v1[0], v1[1], v1[2]
+    y1, y2, y3 = v2[0], v2[1], v2[2]
+    return np.sqrt(abs((0.5)*(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2))))
+calculate_d3(mesh.vertices)
+
+def calculate_d4(mesh_vertices):
+    '''cube root of volume of tetrahedron formed by 4 random vertices'''
+    v1 = random.choice(mesh_vertices)
+    v2 = random.choice(mesh_vertices)
+    v3 = random.choice(mesh_vertices)
+    v4 = random.choice(mesh_vertices)
+    pass 
+
+
