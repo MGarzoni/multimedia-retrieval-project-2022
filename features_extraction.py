@@ -36,7 +36,6 @@ mesh = trimesh.load(test_mesh)
 '''FEATURE EXTRACTION'''
 
 area = mesh.area
-# calculate compactness
 volume = mesh.volume # this quantity only makes sense if the mesh has no holes (watertight)
 aabb_volume = mesh.bounding_box_oriented.volume
 compactness = pow(area, 3) / pow(volume, 2)

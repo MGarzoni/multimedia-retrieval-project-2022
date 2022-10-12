@@ -22,7 +22,8 @@ def inspect_db(db_path):
     
                     # save a dict containing all the desired attributes
                     db_info[filename] = extract_attributes_from_path(full_path)
-                    print("Attributes successfully exported to csv.")
+    
+    print("Attributes successfully exported to csv.")
 
     return db_info
 

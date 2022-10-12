@@ -40,8 +40,7 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(3500)):
                 "axis_aligned_bounding_box" : mesh.bounding_box.extents,
                 "is_out" : True if len(mesh.vertices) in outliers_range else False,
                 "centroid" : mesh.centroid,
-                "area" : mesh.area,
-                "face_area": mesh.area_faces}
+                "area" : mesh.area} # here decide whether to already include feats such as area, volume etc., or just make later a new csv with these
     
     return out_dict
     

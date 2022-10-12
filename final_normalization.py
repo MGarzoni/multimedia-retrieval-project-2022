@@ -30,6 +30,9 @@ def normalize_db(database, original_csv, out_dir, verbose=False):
                 shape_attributes = attributes_dict[filename]
                 # print(shape_attributes)
                 
+                '''Below remeshing thru command line is throwing errors for files not in .off format;
+                below I will try to use mesh.subdivide()'''
+
                 # if it's an outlier, remesh and save remeshed to out_dir
                 if shape_attributes['is_out']:
                     # print(f"\n{shape_attributes['filename']} is an outlier!")
@@ -45,7 +48,11 @@ def normalize_db(database, original_csv, out_dir, verbose=False):
                     # call mccullark subdivider java program
                     subprocess.call(subdivider_command, shell=True)
                     # update num_vertices column #may be unnecessary since we re-extract attributes at the end
-                
+
+                    # trying to use mesh.subdivide() for resampling
+                    # mesh = trimesh.load(full_path)
+                    # remeshed_mesh = mesh.subdivide()
+
                 # load mesh from path
                 mesh = trimesh.load(full_path)
 
@@ -101,21 +108,40 @@ original_psb_csv = "./attributes/original-PSB-attributes.csv"
 out_dir = "./normalized"
 normalize_db(database=PSB_PATH, original_csv=original_psb_csv, out_dir=out_dir)
 
-# plot hist to compare distr of num_vertices before and after normalization
+
+'''
+To check if normalization procedure was carried out correctly, check:
+    - number of sampling points (vertices)
+    - size of bounding box (computed via its diagonal)
+    - position of bounding box (distance of its center to the origin)
+    - pose (absolute value of cosine of angle between major eigenvector and, say, the X axis)
+'''
+
+# read in attributes before and after and print their descriptive stats
 before = pd.read_csv(original_psb_csv)
 after = pd.read_csv("./attributes/normalized-PSB-attributes.csv")
+print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
+print(f"\nSummary of attributes AFTER normalization:\n{after[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
+
+# plot hist to compare distr of num_vertices before and after normalization
 sns.kdeplot(before['num_vertices'], color='r', shade=True, label='before')
 sns.kdeplot(after['num_vertices'], color='g', shade=True, label='after')
 plt.title("Number of vertices before and after normalization pipeline")
 plt.legend()
 plt.show()
 
-# plot hist to compare distr of centroids before and after normalization
-sns.kdeplot([len(centroid) for centroid in before['centroid']], color='r', shade=True, label='before')
-sns.kdeplot([len(centroid) for centroid in after['centroid']], color='g', shade=True, label='after')
-plt.title("Distribution of centroids before and after normalization pipeline")
+# plot hist to compare distr of shape areas before and after normalization
+sns.kdeplot(before['area'], color='r', shade=True, label='before')
+sns.kdeplot(after['area'], color='g', shade=True, label='after')
+plt.title("Distribution of shape areas before and after normalization pipeline")
 plt.legend()
 plt.show()
+
+# plot hist to compare size of bounding box before and after normalization
+
+
+# plot hist to compare position of bounding box (distance of its center to the origin) before and after normalization
+
 
 # save visualization of meshes before and after normalization
 mesh_before = trimesh.load("./psb-labeled-db/FourLeg/397.off")
@@ -123,44 +149,26 @@ mesh_after = trimesh.load("./normalized/397.off")
 before_after(mesh_before, mesh_after)
 
 # display before and after side by side
+import cv2
 img_before = "./pics/before.png"
 img_after = "./pics/after.png"
-f, axs = plt.subplots(1,2)
-axs[0].imshow(img_before.astype('float64'))
-axs[1].imshow(img_after.astype('float64'))
-
-import cv2
 fig = plt.figure(figsize=(10, 8))
-rows, cols = 1, 2
 img1 = cv2.imread(img_before)
 img2 = cv2.imread(img_after)
-fig.add_subplot(rows, cols, 1)
+fig.add_subplot(1, 2, 1)
 plt.imshow(img1)
 plt.axis('off')
 plt.title("Before normalization")
-fig.add_subplot(rows, cols, 2)
+fig.add_subplot(1, 2, 2)
 plt.imshow(img2)
 plt.axis('off')
 plt.title("After normalization")
 
 '''
-SHOULD ALSO CHECK THESE (and also comparing face_area after):
-
-Steps 2 of the assignment involve several normalizations (of the shapes sampling densities, sizes, and poses). How to check if you implemented such normalizations correctly?
-
-This can be done generically (and easily) for all above cases. Consider any quantity Q that is measured for a shape, such as
-
-    number of sampling points (vertices)
-    size of bounding box (computed via its diagonal)
-    position of bounding box (distance of its center to the origin)
-    pose (absolute value of cosine of angle between major eigenvector and, say, the X axis) 
-
-All these are scalar quantities.
-
-What does a good normalization do? It reduces the variance of Q. Hence, to check if your normalization works OK, you can compute an indication of Q's variance before and then after the normalization, and compare them. If variance drops significantly, the normalization worked properly.
-
+What does a good normalization do? It reduces the variance of Q.
+Hence, to check if your normalization works OK, you can compute an indication of Q's variance before and then after the normalization, and compare them.
+If variance drops significantly, the normalization worked properly.
 You can estimate this variance in several ways. From more aggregated (less informative) to less aggregated (more informative):
-
     compute the average and standard deviation of Q: The standard deviation should drop after normalization. The average indicates the value around which normalization brings the shapes.
     compute a histogram of Q over a fixed number of bins: Normalization should make the histogram more pointy, that is, having (ideally) a single large peak and being nearly zero away from that peak. 
 '''
