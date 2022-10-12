@@ -24,18 +24,24 @@ Next, bin the ranges of these descriptors on a fixed number of bins B, e.g., 8..
 This gives you a B-dimensional descriptor.
 """
 
+# imports
 import trimesh
 import random
 import numpy as np
 
+# load sample mesh
 test_mesh = "./normalized/22.off"
 mesh = trimesh.load(test_mesh)
+
+'''FEATURE EXTRACTION'''
+
 area = mesh.area
+# calculate compactness
 volume = mesh.volume # this quantity only makes sense if the mesh has no holes (watertight)
 aabb_volume = mesh.bounding_box_oriented.volume
 compactness = pow(area, 3) / pow(volume, 2)
-# diameter
-# eccentricity
+# calculate diameter
+# calculate eccentricity
 
 def calculate_a3(rand_mesh_vertices):
     '''angle between 3 random vertices'''
@@ -74,6 +80,6 @@ def calculate_d4(mesh_vertices):
     v2 = random.choice(mesh_vertices)
     v3 = random.choice(mesh_vertices)
     v4 = random.choice(mesh_vertices)
-    pass 
+    pass # to complete
 
 
