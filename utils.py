@@ -5,6 +5,8 @@ import math
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+import seaborn as sns
+from math import sqrt
 
 # corners of image, array used for visually consistent png export of meshes
 CORNERS = [[-0.75, -0.75, -0.75],
@@ -20,6 +22,9 @@ CORNERS = [[-0.75, -0.75, -0.75],
 PRINCETON_PATH = "./princeton-labeled-db/"
 PSB_PATH = "./psb-labeled-db/"
 
+#parameters
+REMESH_THRESHOLD = 3500
+
 def extract_attributes_from_path(mesh_path):
     """Given a path, loads the mesh, checks if it's an outlier,
     and then adds required attributes of mesh to the out_dict to be returned"""
@@ -28,7 +33,7 @@ def extract_attributes_from_path(mesh_path):
 
     return extract_attributes_from_mesh(mesh, mesh_path)
 
-def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(3500)):
+def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(REMESH_THRESHOLD)):
     """Extract features from a mesh that has already been loaded"""
 
     out_dict = {"filename" : mesh_path.split('/')[-1],
@@ -38,8 +43,11 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(3500)):
                 "num_vertices" : len(mesh.vertices),
                 "faces_type" : 'triangles',
                 "axis_aligned_bounding_box" : mesh.bounding_box.extents,
+                "boundingbox_diagonal": sqrt(sum([x*x for x in mesh.bounding_box.extents])), # diagonal of bounding box
                 "is_out" : True if len(mesh.vertices) in outliers_range else False,
                 "centroid" : mesh.centroid,
+                "centroid_to_origin" : sqrt(sum([x*x for x in mesh.centroid])), # distance of centroid to origin
+                "boundingbox_distance":sqrt(sum([x*x for x in 0.5*(mesh.bounds[1]+mesh.bounds[0])])), # boundingbox center, distance to origin
                 "area" : mesh.area} # here decide whether to already include feats such as area, volume etc., or just make later a new csv with these
     
     return out_dict
@@ -202,3 +210,48 @@ def test_mesh_transformation(function):
     mesh.vertices *= (1.2, 1.2, 1.2)
     newmesh = mesh.copy()
     before_after(mesh, function(newmesh), corners = CORNERS)
+
+def before_after_hist(original_csv, norm_csv, attributes):
+    # read in attributes before and after and print their descriptive stats
+    before = pd.read_csv(original_csv)
+    after = pd.read_csv(norm_csv)
+    print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
+    print(f"\nSummary of attributes AFTER normalization:\n{after[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
+
+    for attribute in attributes:
+
+        # plot hist to compare distr of num_vertices before and after normalization
+        sns.kdeplot(before[attribute], color='r', shade=True, label='before')
+        sns.kdeplot(after[attribute], color='g', shade=True, label='after')
+        plt.title(f"{attribute} before and after normalization pipeline")
+        plt.legend()
+        plt.show()
+    
+def update_csv(db_path, csv_path, flat_dir = False):
+    """Given a database path, iterate through all shapes in the database and extract attributes into dictionary.
+    Export dictionary as CSV to csv_path"""
+    
+    attributes_dict = {}
+    
+    #if it's a flat directory
+    if flat_dir == True:
+        for filename in os.listdir(db_path):
+            full_path = os.path.join(db_path, filename)
+            # consider only 3D mesh files
+            if filename.endswith(('.ply', '.obj', '.off')):
+                attributes_dict[filename] = extract_attributes_from_path(full_path)
+                print("Extracted attributes of", full_path)
+            
+    # if it's a database with categories   
+    elif flat_dir == False:
+        for dirname in os.listdir(db_path):
+            if dirname != ".DS_Store":
+                for filename in os.listdir(os.path.join(db_path, dirname)):
+                    full_path = os.path.join(db_path, dirname, filename)
+                    # consider only 3D mesh files
+                    if filename.endswith(('.ply', '.obj', '.off')):
+                        attributes_dict[filename] = extract_attributes_from_path(full_path)
+                        print("Extracted attributes of", full_path)
+    # write dictionary to csv
+    output = pd.DataFrame.from_dict(attributes_dict, orient='index')
+    output.to_csv(csv_path)
