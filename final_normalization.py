@@ -117,12 +117,15 @@ after = pd.read_csv(out_csv)
 print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
 print(f"\nSummary of attributes AFTER normalization:\n{after[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
 
-#histograms, before and after
-before_after_hist("./attributes/original-PSB-attributes.csv", "./attributes/normalized-PSB-attributes.csv",
-                  attributes = ["area", "num_vertices"])
 
+# update csv's if necessary
 update_csv(PSB_PATH, original_psb_csv, flat_dir=False)
 update_csv(out_dir, out_csv, flat_dir = True)
+
+#histograms, before and after
+before_after_hist("./attributes/original-PSB-attributes.csv", "./attributes/normalized-PSB-attributes.csv",
+                  attributes = ["area", "num_vertices", "boundingbox_distance", "centroid_to_origin", "boundingbox_diagonal"])
+
 
 # plot hist to compare size of bounding box before and after normalization
 
