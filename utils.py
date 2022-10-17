@@ -41,6 +41,7 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(REMESH_TH
                 "category" : mesh_path.split('/')[-2], # this may change
                 "num_faces" : len(mesh.faces),
                 "num_vertices" : len(mesh.vertices),
+                "max_extent": max(mesh.bounding_box.extents),
                 "faces_type" : 'triangles',
                 "axis_aligned_bounding_box" : mesh.bounding_box.extents,
                 "boundingbox_diagonal": sqrt(sum([x*x for x in mesh.bounding_box.extents])), # diagonal of bounding box

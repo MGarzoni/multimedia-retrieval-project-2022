@@ -4,7 +4,9 @@ import subprocess
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-def normalize_db(database, original_csv, out_dir, verbose=False):
+from reporting import ShapeReport as report
+
+def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     """This function takes a database, iteratively gets a shape from a category and
     applies normalization steps to the mesh; if the shape is an outlier, the remeshing via 
     catmullclark subvider is triggered; the normalized mesh is then exported as a new .off file and 
@@ -61,9 +63,6 @@ def normalize_db(database, original_csv, out_dir, verbose=False):
                     mesh = center_at_origin(mesh)
                     # if verbose: save_mesh_png(mesh, "2-translated", corners = CORNERS)
     
-                    # scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
-                    mesh = scale_to_unit(mesh)
-                    # if verbose: save_mesh_png(mesh, "3-scaled", corners = CORNERS)
     
                     # align pca: x axis is most variance, z axis is least variance
                     mesh = pca_align(mesh)
@@ -72,6 +71,10 @@ def normalize_db(database, original_csv, out_dir, verbose=False):
                     # moment test
                     mesh = moment_flip(mesh)
                     # if verbose: save_mesh_png(mesh, "5-moment", corners = CORNERS)
+                    
+                    # scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
+                    mesh = scale_to_unit(mesh)
+                    # if verbose: save_mesh_png(mesh, "3-scaled", corners = CORNERS)
     
                     '''From here we export normalized mesh as new .off file to normalized folder'''
     
@@ -94,13 +97,14 @@ def normalize_db(database, original_csv, out_dir, verbose=False):
     
     # export updated attributes to new csv file
     output = pd.DataFrame.from_dict(new_files_dict, orient='index')
-    output.to_csv(f"./attributes/normalized-PSB-attributes.csv")
+    output.to_csv(out_csv)
     print("Normalized attributes successfully exported to csv.")
 
 original_psb_csv = "./attributes/original-PSB-attributes.csv"
 out_dir = "./normalized"
 out_csv = "./attributes/normalized-PSB-attributes.csv"
-# normalize_db(database=PSB_PATH, original_csv=original_psb_csv, out_dir=out_dir)
+
+# normalize_db(database=PSB_PATH, original_csv=original_psb_csv, out_dir = out_dir, out_csv = out_csv)
 
 
 '''
@@ -114,8 +118,8 @@ To check if normalization procedure was carried out correctly, check:
 # read in attributes before and after and print their descriptive stats
 before = pd.read_csv(original_psb_csv)
 after = pd.read_csv(out_csv)
-print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
-print(f"\nSummary of attributes AFTER normalization:\n{after[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
+# print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
+# print(f"\nSummary of attributes AFTER normalization:\n{after[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
 
 
 # update csv's if necessary
@@ -123,9 +127,32 @@ update_csv(PSB_PATH, original_psb_csv, flat_dir=False)
 update_csv(out_dir, out_csv, flat_dir = True)
 
 #histograms, before and after
-before_after_hist("./attributes/original-PSB-attributes.csv", "./attributes/normalized-PSB-attributes.csv",
-                  attributes = ["area", "num_vertices", "boundingbox_distance", "centroid_to_origin", "boundingbox_diagonal"])
+# before_after_hist("./attributes/original-PSB-attributes.csv", "./attributes/normalized-PSB-attributes.csv",
+#                   attributes = ["area", "num_vertices", "boundingbox_distance", "centroid_to_origin", "boundingbox_diagonal"])
 
+
+# read in attributes before and after and print their descriptive stats
+before = pd.read_csv(original_psb_csv)
+after = pd.read_csv(out_csv)
+# print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
+# print(f"\nSummary of attributes AFTER normalization:\n{after[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
+
+
+
+before_rep = report(before)
+after_rep = report(after, given_ranges=before_rep.ranges)
+
+before_rep.save("before")
+after_rep.save("after")
+
+
+
+
+
+
+
+
+# deprecated code:
 
 # plot hist to compare size of bounding box before and after normalization
 
@@ -133,26 +160,26 @@ before_after_hist("./attributes/original-PSB-attributes.csv", "./attributes/norm
 # plot hist to compare position of bounding box (distance of its center to the origin) before and after normalization
 
 
-# save visualization of meshes before and after normalization
-mesh_before = trimesh.load("./psb-labeled-db/FourLeg/397.off")
-mesh_after = trimesh.load("./normalized/397.off")
-before_after(mesh_before, mesh_after)
+# # save visualization of meshes before and after normalization
+# mesh_before = trimesh.load("./psb-labeled-db/FourLeg/397.off")
+# mesh_after = trimesh.load("./normalized/397.off")
+# before_after(mesh_before, mesh_after)
 
-# display before and after side by side
-import cv2
-img_before = "./pics/before.png"
-img_after = "./pics/after.png"
-fig = plt.figure(figsize=(10, 8))
-img1 = cv2.imread(img_before)
-img2 = cv2.imread(img_after)
-fig.add_subplot(1, 2, 1)
-plt.imshow(img1)
-plt.axis('off')
-plt.title("Before normalization")
-fig.add_subplot(1, 2, 2)
-plt.imshow(img2)
-plt.axis('off')
-plt.title("After normalization")
+# # display before and after side by side
+# import cv2
+# img_before = "./pics/before.png"
+# img_after = "./pics/after.png"
+# fig = plt.figure(figsize=(10, 8))
+# img1 = cv2.imread(img_before)
+# img2 = cv2.imread(img_after)
+# fig.add_subplot(1, 2, 1)
+# plt.imshow(img1)
+# plt.axis('off')
+# plt.title("Before normalization")
+# fig.add_subplot(1, 2, 2)
+# plt.imshow(img2)
+# plt.axis('off')
+# plt.title("After normalization")
 
 '''
 What does a good normalization do? It reduces the variance of Q.
