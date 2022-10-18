@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from math import sqrt
 
+
 # corners of image, array used for visually consistent png export of meshes
 CORNERS = [[-0.75, -0.75, -0.75],
        [ 0.75, -0.75, -0.75],
@@ -35,6 +36,10 @@ def extract_attributes_from_path(mesh_path):
 
 def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(REMESH_THRESHOLD)):
     """Extract features from a mesh that has already been loaded"""
+    
+    # get moments of inertia just ONCE
+    
+    fx, fy, fz = moments_of_inertia(mesh)
 
     out_dict = {"filename" : mesh_path.split('/')[-1],
                 "path" : mesh_path,
@@ -49,7 +54,10 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(REMESH_TH
                 "centroid" : mesh.centroid,
                 "centroid_to_origin" : sqrt(sum([x*x for x in mesh.centroid])), # distance of centroid to origin
                 "boundingbox_distance":sqrt(sum([x*x for x in 0.5*(mesh.bounds[1]+mesh.bounds[0])])), # boundingbox center, distance to origin
-                "area" : mesh.area} # here decide whether to already include feats such as area, volume etc., or just make later a new csv with these
+                "area" : mesh.area, # here decide whether to already include feats such as area, volume etc., or just make later a new csv with these
+                "pca_pose": pca_pose(mesh), # abs value of cosine of major variance direction with x axis
+                "fx":fx, "fy":fy, "fz":fz, # moments of inertia along each axis
+                }
     
     return out_dict
     
@@ -135,30 +143,38 @@ def before_after(mesh1, mesh2, corners = None):
     save_mesh_png(mesh1, "before", corners = corners)
     save_mesh_png(mesh2, "after", corners = corners)
     
-def pca_eigenvalues_eigenvectors(mesh):
-    """Matrix of points of shape (3, nr points)"""
-
+def pca_eigenvectors(mesh, verbose = False):
+    """"Return PCA eigenvectors (major variance first, least variance last)"""
+    
+    # This is a matrix of points of shape (3, nr points)
     A = np.transpose(mesh.vertices)
     A_cov = np.cov(A)
     eigenvalues, eigenvectors = np.linalg.eig(A_cov)
+    
+    # we now sort eigenvalues by ascending order, saving the index of each rank position:
+    ascend_order = np.argsort(eigenvalues)
+    
+    if verbose: print("PCA before alignment\n", eigenvalues, eigenvectors)
+    
+    # e1, e2, e3 based on the order of the eigenvalues magnitudes
+    # NOTE: e1, e2, e3 all have magnitude 1
+    e3, e2, e1 = (eigenvectors[:,index] for index in ascend_order) #the eigenvectors are the COLUMNS of the vector matrix
 
-    return eigenvalues, eigenvectors
+    return e1, e2, e3 # we return them in descending order
+
+def pca_pose(mesh):
+    """Return abs val of cosine of angle between the axis of most variance and the x axis"""
+    e1, e2, e3 = pca_eigenvectors(mesh)
+    return abs(e1[0]) # return the abs of the 1st element of the e1 vector (i.e. its x coord). This coordinate is the cosine we need 
 
 def pca_align(mesh, verbose=False):
     """Largest variance will align with x axis, least variance will align with z axis. 
     Use pca eigenvectors and eigenvalues to project correctly."""
     
     # find PCA values
-    pca_values, pca_vectors = pca_eigenvalues_eigenvectors(mesh)
+    e1, e2, e3 = pca_eigenvectors(mesh, verbose = verbose)
     
-    # we now sort eigenvalues by ascending order, saving the index of each rank position:
-    ascend_order = np.argsort(pca_values)
     
-    if verbose: print("PCA before alignment\n", pca_values, pca_vectors)
-    
-    # e1, e2, e3 based on the order of the eigenvalues magnitudes
-    # NOTE: e1, e2, e3 all have magnitude 1
-    e3, e2, e1 = (pca_vectors[:,index] for index in ascend_order) #the eigenvectors are the COLUMNS of the vector matrix
     
     # create new mesh to store pca-aligned object
     aligned_mesh = mesh.copy()
@@ -175,8 +191,8 @@ def pca_align(mesh, verbose=False):
     if verbose: before_after(mesh, aligned_mesh, corners = CORNERS)
     
     if verbose:
-        new_pca_values, new_pca_vectors = pca_eigenvalues_eigenvectors(aligned_mesh)
-        print("PCA after alignment\n", new_pca_values, new_pca_vectors)
+        new_pca_vectors = pca_eigenvectors(aligned_mesh)
+        print("PCA after alignment (most to least) \n", new_pca_vectors)
     
     # display_mesh_with_axes(mesh3)
     
@@ -185,13 +201,7 @@ def pca_align(mesh, verbose=False):
 def moment_flip(mesh, verbose=False):
     """Flip based on moment: the greater part of the object should be on the POSITIVE side of each axis"""
     
-    # get centers of triangles
-    triangles = mesh.triangles_center
-    
-    # calculate the sum of f values for each axis
-    fx, fy, fz = np.sum(
-        [ (np.sign(x)*x*x, np.sign(y)*y*y, np.sign(z)*z*z) for x,y,z in triangles],
-                        axis = 0)
+    fx, fy, fz = moments_of_inertia(mesh)
     
     # find the corresponding signs
     sx, sy, sz = np.sign([fx, fy, fz])
@@ -201,6 +211,18 @@ def moment_flip(mesh, verbose=False):
         mesh.vertices[index] = np.multiply(mesh.vertices[index], (sx, sy, sz))
         
     return mesh
+
+def moments_of_inertia(mesh):
+    """Find moments of inertia along the x y and z axes"""
+    # get centers of triangles
+    triangles = mesh.triangles_center
+    
+    # calculate the sum of f values for each axis
+    fx, fy, fz = np.sum(
+        [ (np.sign(x)*x*x, np.sign(y)*y*y, np.sign(z)*z*z) for x,y,z in triangles],
+                        axis = 0)
+    
+    return fx, fy, fz
 
 def test_mesh_transformation(function):
     """Takes a hand mesh and transports it so that it is highly off-center. 

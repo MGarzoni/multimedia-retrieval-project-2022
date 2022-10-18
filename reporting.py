@@ -22,7 +22,9 @@ class ShapeReport:
             "centroid_to_origin",# distance of centroid to origin
             "boundingbox_distance", # boundingbox center, distance to origin
             "max_extent", # maximum extent of bounding box
-            "area" 
+            "area",
+            "pca_pose", # absval of cosine of angle between major variance direction and x axis
+            "fx", "fy", "fz", # moments of inertia along each axis
         ]
 
         self.stats = pd.DataFrame({
@@ -43,11 +45,11 @@ class ShapeReport:
             # apply range if given_ranges were passed
             if given_ranges:
                 given_range = list(given_ranges[column])
-                # force-include 0 if it is excluded
+                # force-include 0 and 1 if they are excluded
                 if given_range[0] > 0:
                     given_range[0] = -0.005
-                if given_range[1] < 0:
-                    given_range[1] = 0.005
+                if given_range[1] < 1:
+                    given_range[1] = 1.005
                 self.histograms[column] = np.histogram(data[column], bins=100, range = given_range)
             else:
                 self.histograms[column] = np.histogram(data[column], bins=100)

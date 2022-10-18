@@ -11,7 +11,9 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     applies normalization steps to the mesh; if the shape is an outlier, the remeshing via 
     catmullclark subvider is triggered; the normalized mesh is then exported as a new .off file and 
     then we call the extract_attributes_from_mesh util function and export the new csv holding the 
-    normalized attributes."""
+    normalized attributes.
+    
+    NOTE: The original csv may not be up to date about attributes and features. This can be updated separately with update_csv()"""
 
     # call utils function to turn csv file of attributes into dict of dicts indexed by filename
     attributes_dict = attributes_csv_to_dict(original_csv)
@@ -100,11 +102,6 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     output.to_csv(out_csv)
     print("Normalized attributes successfully exported to csv.")
 
-original_psb_csv = "./attributes/original-PSB-attributes.csv"
-out_dir = "./normalized"
-out_csv = "./attributes/normalized-PSB-attributes.csv"
-
-# normalize_db(database=PSB_PATH, original_csv=original_psb_csv, out_dir = out_dir, out_csv = out_csv)
 
 
 '''
@@ -114,45 +111,42 @@ To check if normalization procedure was carried out correctly, check:
     - position of bounding box (distance of its center to the origin)
     - pose (absolute value of cosine of angle between major eigenvector and, say, the X axis)
 '''
+original_psb_csv = "./attributes/original-PSB-attributes.csv"
+out_dir = "./normalized"
+out_csv = "./attributes/normalized-PSB-attributes.csv"
 
-# read in attributes before and after and print their descriptive stats
+NORMALIZE = False # set to true to re-do normalization
+UPDATE_CSV = True # set to true to re-update attributes CSV files for both before and after normalization
+
+if NORMALIZE:
+    normalize_db(database=PSB_PATH, original_csv=original_psb_csv, out_dir = out_dir, out_csv = out_csv)
+
+if UPDATE_CSV:
+    # update csv's if necessary
+    update_csv(PSB_PATH, original_psb_csv, flat_dir=False)
+    update_csv(out_dir, out_csv, flat_dir = True)
+
+
+# read in attributes before and after normalization
 before = pd.read_csv(original_psb_csv)
 after = pd.read_csv(out_csv)
-# print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
-# print(f"\nSummary of attributes AFTER normalization:\n{after[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
 
-
-# update csv's if necessary
-update_csv(PSB_PATH, original_psb_csv, flat_dir=False)
-update_csv(out_dir, out_csv, flat_dir = True)
-
-#histograms, before and after
-# before_after_hist("./attributes/original-PSB-attributes.csv", "./attributes/normalized-PSB-attributes.csv",
-#                   attributes = ["area", "num_vertices", "boundingbox_distance", "centroid_to_origin", "boundingbox_diagonal"])
-
-
-# read in attributes before and after and print their descriptive stats
-before = pd.read_csv(original_psb_csv)
-after = pd.read_csv(out_csv)
-# print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
-# print(f"\nSummary of attributes AFTER normalization:\n{after[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")
-
-
-
+# generate histogram report objects
 before_rep = report(before)
 after_rep = report(after, given_ranges=before_rep.ranges)
 
-before_rep.save("before")
-after_rep.save("after")
-
-
-
-
+# export histograms into folders
+before_rep.save("before_hists")
+after_rep.save("after_hists")
 
 
 
 
 # deprecated code:
+    
+    #histograms, before and after
+    # before_after_hist("./attributes/original-PSB-attributes.csv", "./attributes/normalized-PSB-attributes.csv",
+    #                   attributes = ["area", "num_vertices", "boundingbox_distance", "centroid_to_origin", "boundingbox_diagonal"])
 
 # plot hist to compare size of bounding box before and after normalization
 
