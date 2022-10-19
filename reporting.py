@@ -1,17 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-
-
-
-
 import os
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.ticker import PercentFormatter
-
 
 class ShapeReport:
     def __init__(self, data: pd.DataFrame, given_ranges = None): # histograms can be PRE defined!
@@ -45,31 +35,34 @@ class ShapeReport:
             # apply range if given_ranges were passed
             if given_ranges:
                 given_range = list(given_ranges[column])
+
                 # force-include 0 and 1 if they are excluded
                 if given_range[0] > 0:
                     given_range[0] = -0.005
                 if given_range[1] < 1:
                     given_range[1] = 1.005
+
                 self.histograms[column] = np.histogram(data[column], bins=100, range = given_range)
+
             else:
                 self.histograms[column] = np.histogram(data[column], bins=100)
+
             # save the range of this column
             self.ranges[column] = (data[column].min(), data[column].max()) 
-                
-        
 
     def save(self, output: str):
-        # Create all needed dirs
+
+        # create all needed dirs
         os.makedirs(output, exist_ok=True)
 
-        # Write the stats to a csv file
+        # write the stats to a csv file
         self.stats.to_csv(os.path.join(output, 'stats.csv'), index=False, float_format='%.6f')
 
         plt.style.use('grayscale')
         
         for column in self.columns:
 
-            # Save the vertex counts distribution
+            # save the vertex counts distribution
             counts, bins = self.histograms[column]
             _, ax = plt.subplots()
             plt.hist(bins[:-1], bins, weights=counts)
@@ -80,6 +73,5 @@ class ShapeReport:
             plt.savefig(os.path.join(output, f'{column}.pdf'))
             plt.close()
 
-
-        # Log that it is done
+        # log that it is done
         print('Output saved to', output)

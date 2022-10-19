@@ -1,4 +1,3 @@
-# imports
 import trimesh
 import os
 import math
@@ -7,7 +6,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 from math import sqrt
-
 
 # corners of image, array used for visually consistent png export of meshes
 CORNERS = [[-0.75, -0.75, -0.75],
@@ -23,7 +21,7 @@ CORNERS = [[-0.75, -0.75, -0.75],
 PRINCETON_PATH = "./princeton-labeled-db/"
 PSB_PATH = "./psb-labeled-db/"
 
-#parameters
+# parameters
 REMESH_THRESHOLD = 3500
 
 def extract_attributes_from_path(mesh_path):
@@ -38,7 +36,6 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(REMESH_TH
     """Extract features from a mesh that has already been loaded"""
     
     # get moments of inertia just ONCE
-    
     fx, fy, fz = moments_of_inertia(mesh)
 
     out_dict = {"filename" : mesh_path.split('/')[-1],
@@ -54,7 +51,6 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(REMESH_TH
                 "centroid" : mesh.centroid,
                 "centroid_to_origin" : sqrt(sum([x*x for x in mesh.centroid])), # distance of centroid to origin
                 "boundingbox_distance":sqrt(sum([x*x for x in 0.5*(mesh.bounds[1]+mesh.bounds[0])])), # boundingbox center, distance to origin
-                "area" : mesh.area, # here decide whether to already include feats such as area, volume etc., or just make later a new csv with these
                 "pca_pose": pca_pose(mesh), # abs value of cosine of major variance direction with x axis
                 "fx":fx, "fy":fy, "fz":fz, # moments of inertia along each axis
                 }
@@ -146,7 +142,7 @@ def before_after(mesh1, mesh2, corners = None):
 def pca_eigenvectors(mesh, verbose = False):
     """"Return PCA eigenvectors (major variance first, least variance last)"""
     
-    # This is a matrix of points of shape (3, nr points)
+    # this is a matrix of points of shape (3, nr points)
     A = np.transpose(mesh.vertices)
     A_cov = np.cov(A)
     eigenvalues, eigenvectors = np.linalg.eig(A_cov)
@@ -158,12 +154,13 @@ def pca_eigenvectors(mesh, verbose = False):
     
     # e1, e2, e3 based on the order of the eigenvalues magnitudes
     # NOTE: e1, e2, e3 all have magnitude 1
-    e3, e2, e1 = (eigenvectors[:,index] for index in ascend_order) #the eigenvectors are the COLUMNS of the vector matrix
+    e3, e2, e1 = (eigenvectors[:,index] for index in ascend_order) # the eigenvectors are the COLUMNS of the vector matrix
 
     return e1, e2, e3 # we return them in descending order
 
 def pca_pose(mesh):
     """Return abs val of cosine of angle between the axis of most variance and the x axis"""
+
     e1, e2, e3 = pca_eigenvectors(mesh)
     return abs(e1[0]) # return the abs of the 1st element of the e1 vector (i.e. its x coord). This coordinate is the cosine we need 
 
@@ -174,17 +171,16 @@ def pca_align(mesh, verbose=False):
     # find PCA values
     e1, e2, e3 = pca_eigenvectors(mesh, verbose = verbose)
     
-    
-    
     # create new mesh to store pca-aligned object
     aligned_mesh = mesh.copy()
+
     # set all vertices to 0
     aligned_mesh.vertices = np.zeros(mesh.vertices.shape)
     
-    
     # calculate new mesh's vertex coordinates based on PCA dot product formulas
-    for index in range(mesh.vertices.shape[0]): #loop through vertices
-        point = mesh.vertices[index] #take point from original mesh
+    for index in range(mesh.vertices.shape[0]): # loop through vertices
+        point = mesh.vertices[index] # take point from original mesh
+
         # calculate new x, y, z coordinates and put into the new mesh
         aligned_mesh.vertices[index] = np.dot(point, e1), np.dot(point, e2), np.dot(point, np.cross(e1, e2))
             
@@ -193,8 +189,6 @@ def pca_align(mesh, verbose=False):
     if verbose:
         new_pca_vectors = pca_eigenvectors(aligned_mesh)
         print("PCA after alignment (most to least) \n", new_pca_vectors)
-    
-    # display_mesh_with_axes(mesh3)
     
     return aligned_mesh
 
@@ -214,6 +208,7 @@ def moment_flip(mesh, verbose=False):
 
 def moments_of_inertia(mesh):
     """Find moments of inertia along the x y and z axes"""
+
     # get centers of triangles
     triangles = mesh.triangles_center
     
@@ -235,7 +230,8 @@ def test_mesh_transformation(function):
     before_after(mesh, function(newmesh), corners = CORNERS)
 
 def before_after_hist(original_csv, norm_csv, attributes):
-    # read in attributes before and after and print their descriptive stats
+    """Read in attributes before and after and print their descriptive stats"""
+
     before = pd.read_csv(original_csv)
     after = pd.read_csv(norm_csv)
     print(f"Summary of attributes BEFORE normalization:\n{before[['axis_aligned_bounding_box', 'centroid', 'area']].describe(include='all')}")

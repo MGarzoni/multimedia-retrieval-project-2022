@@ -8,9 +8,9 @@ Compute the following 3D elementary descriptors presented in Module 4: Feature e
     diameter
     eccentricity (ratio of largest to smallest eigenvalues of covariance matrix) 
 
-Note that the definitions given in Module 4 are for 2D shapes. You need to adapt them to 3D shapes (easy).
+All above are simple global descriptors, that is, they yield a single real value.
 
-All above are simple global descriptors, that is, they yield a single real value. Besides these, compute also the following shape property descriptors:
+Besides these, compute also the following shape property descriptors:
 
     a3: angle between 3 random vertices
     D1: distance between barycenter and random vertex
@@ -24,17 +24,38 @@ Next, bin the ranges of these descriptors on a fixed number of bins B, e.g., 8..
 This gives you a B-dimensional descriptor.
 """
 
-# imports
 import trimesh
 import random
 import numpy as np
+import os
+import pandas as pd
+from math import dist
+import matplotlib.pyplot as plt
+
+# load some test normalized meshes
+root = "./normalized-psb-db/"
+features = {'areas': [], 'volumes': [], 'aabb_volumes': [], 'compactness': []}
+for file in os.listdir(root)[:10]:
+    mesh = trimesh.load(root + file)
+    features['areas'].append(mesh.area)
+    features['volumes'].append(mesh.volume)
+    features['aabb_volumes'].append(mesh.bounding_box_oriented.volume)
+    features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
+print(features)
+
+current = 0
+next = 1
+areas = features['areas']
+while (current and next) < len(areas):
+    print(dist((areas[current], areas[next]), (areas[next], areas[next+1])))
+    current += 1
+    next += 1
 
 # load sample mesh
 test_mesh = "./normalized/22.off"
 mesh = trimesh.load(test_mesh)
 
-'''FEATURE EXTRACTION'''
-
+'''SIMPLE 3D GLOBAL DESCRIPTORS'''
 area = mesh.area
 volume = mesh.volume # this quantity only makes sense if the mesh has no holes (watertight)
 aabb_volume = mesh.bounding_box_oriented.volume
@@ -42,6 +63,7 @@ compactness = pow(area, 3) / pow(volume, 2)
 # calculate diameter
 # calculate eccentricity
 
+'''SHAPE PROPERTY DESCRIPTORS (DISTRIBUTIONS)'''
 def calculate_a3(rand_mesh_vertices):
     '''angle between 3 random vertices'''
     # taken from: https://stackoverflow.com/a/35178910
@@ -53,32 +75,33 @@ def calculate_a3(rand_mesh_vertices):
     angle = np.arccos(cosine_angle)
 
     return np.degrees(angle)
-calculate_a3(random.choice(mesh.vertices))
 
 def calculate_d1(mesh_vertices):
     '''distance between barycenter and random vertex'''
+
     return np.sqrt(np.sum(np.square(mesh.centroid - random.choice(random.choice(mesh_vertices)))))
-calculate_d1(mesh.vertices)
 
 def calculate_d2(mesh_vertices):
     '''square root of area of triangle given by 3 random vertices'''
+
     return np.sqrt(np.sum(np.square(random.choice(mesh_vertices), random.choice(mesh_vertices))))
 
 def calculate_d3(mesh_vertices):
     '''square root of area of triangle given by 3 random vertices'''
+
     v1 = random.choice(mesh_vertices)
     v2 = random.choice(mesh_vertices)
     x1, x2, x3 = v1[0], v1[1], v1[2]
     y1, y2, y3 = v2[0], v2[1], v2[2]
+
     return np.sqrt(abs((0.5)*(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2))))
-calculate_d3(mesh.vertices)
 
 def calculate_d4(mesh_vertices):
     '''cube root of volume of tetrahedron formed by 4 random vertices'''
+
     v1 = random.choice(mesh_vertices)
     v2 = random.choice(mesh_vertices)
     v3 = random.choice(mesh_vertices)
     v4 = random.choice(mesh_vertices)
+
     pass # to complete
-
-

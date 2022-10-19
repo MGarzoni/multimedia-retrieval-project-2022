@@ -1,18 +1,12 @@
-# imports
 from utils import *
-import subprocess
-import seaborn as sns
-import matplotlib.pyplot as plt
-
 from reporting import ShapeReport as report
 
 def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     """This function takes a database, iteratively gets a shape from a category and
     applies normalization steps to the mesh; if the shape is an outlier, the remeshing via 
-    catmullclark subvider is triggered; the normalized mesh is then exported as a new .off file and 
+    mesh.subdivide() is triggered; the normalized mesh is then exported as a new .off file and 
     then we call the extract_attributes_from_mesh util function and export the new csv holding the 
     normalized attributes.
-    
     NOTE: The original csv may not be up to date about attributes and features. This can be updated separately with update_csv()"""
 
     # call utils function to turn csv file of attributes into dict of dicts indexed by filename
@@ -35,9 +29,6 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     
                     shape_attributes = attributes_dict[filename]
                     # print(shape_attributes)
-                    
-                    '''Below remeshing thru command line is throwing errors for files not in .off format;
-                    below I will try to use mesh.subdivide()'''
     
                     # load mesh from path
                     mesh = trimesh.load(full_path)
@@ -64,7 +55,6 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
                     # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
                     mesh = center_at_origin(mesh)
                     # if verbose: save_mesh_png(mesh, "2-translated", corners = CORNERS)
-    
     
                     # align pca: x axis is most variance, z axis is least variance
                     mesh = pca_align(mesh)
@@ -102,30 +92,21 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     output.to_csv(out_csv)
     print("Normalized attributes successfully exported to csv.")
 
-
-
-'''
-To check if normalization procedure was carried out correctly, check:
-    - number of sampling points (vertices)
-    - size of bounding box (computed via its diagonal)
-    - position of bounding box (distance of its center to the origin)
-    - pose (absolute value of cosine of angle between major eigenvector and, say, the X axis)
-'''
+# set paths
 original_psb_csv = "./attributes/original-PSB-attributes.csv"
-out_dir = "./normalized"
+out_dir = "./normalized-psb-db"
 out_csv = "./attributes/normalized-PSB-attributes.csv"
 
-NORMALIZE = False # set to true to re-do normalization
+NORMALIZE = True # set to true to re-do normalization
 UPDATE_CSV = True # set to true to re-update attributes CSV files for both before and after normalization
 
 if NORMALIZE:
-    normalize_db(database=PSB_PATH, original_csv=original_psb_csv, out_dir = out_dir, out_csv = out_csv)
+    normalize_db(database=PSB_PATH, original_csv=original_psb_csv, out_dir=out_dir, out_csv=out_csv)
 
 if UPDATE_CSV:
     # update csv's if necessary
     update_csv(PSB_PATH, original_psb_csv, flat_dir=False)
     update_csv(out_dir, out_csv, flat_dir = True)
-
 
 # read in attributes before and after normalization
 before = pd.read_csv(original_psb_csv)
@@ -138,9 +119,6 @@ after_rep = report(after, given_ranges=before_rep.ranges)
 # export histograms into folders
 before_rep.save("before_hists")
 after_rep.save("after_hists")
-
-
-
 
 # deprecated code:
     
@@ -174,12 +152,3 @@ after_rep.save("after_hists")
 # plt.imshow(img2)
 # plt.axis('off')
 # plt.title("After normalization")
-
-'''
-What does a good normalization do? It reduces the variance of Q.
-Hence, to check if your normalization works OK, you can compute an indication of Q's variance before and then after the normalization, and compare them.
-If variance drops significantly, the normalization worked properly.
-You can estimate this variance in several ways. From more aggregated (less informative) to less aggregated (more informative):
-    compute the average and standard deviation of Q: The standard deviation should drop after normalization. The average indicates the value around which normalization brings the shapes.
-    compute a histogram of Q over a fixed number of bins: Normalization should make the histogram more pointy, that is, having (ideally) a single large peak and being nearly zero away from that peak. 
-'''
