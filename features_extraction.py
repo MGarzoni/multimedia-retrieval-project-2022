@@ -33,40 +33,8 @@ from math import dist
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def extract_scalar_features(root):
-    '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
-    and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
-
-    features = {'areas': [], 'volumes': [], 'aabb_volumes': [], 'compactness': [], 'diameter': [], 'eccentricity': []}
-    for file in os.listdir(root)[:5]:
-        mesh = trimesh.load(root + file)
-        features['areas'].append(mesh.area)
-        features['volumes'].append(mesh.volume)
-        features['aabb_volumes'].append(mesh.bounding_box_oriented.volume)
-        features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
-
-    features_matrix = pd.DataFrame.from_dict(features)
-    return features_matrix
-
-features_matrix = extract_scalar_features(root='./normalized-psb-db/')
-features_matrix.head()
-
-
-def dist_heatmap(features_matrix:dict):
-    '''Function that takes a feature matrix (N*D, where N is the number of shapes and D is the number of descriptors),
-    converts it to a dataframe'''
-    from scipy.spatial import distance_matrix
-
-    d_m =  pd.DataFrame(distance_matrix(features_matrix.values, features_matrix.values),
-                        index=features_matrix.index, columns=features_matrix.index)
-    sns.set(rc = {'figure.figsize':(15, 10)})
-
-    return sns.heatmap(d_m, annot=True).set(title='Heatmap of distance matrix between feature vectors.')
-
-dist_matrix(features_matrix)
-
 # load sample mesh
-test_mesh = "./normalized/22.off"
+test_mesh = "./normalized-psb-db/24.off"
 mesh = trimesh.load(test_mesh)
 
 '''SIMPLE 3D GLOBAL DESCRIPTORS'''
@@ -78,39 +46,72 @@ compactness = pow(area, 3) / pow(volume, 2)
 # calculate eccentricity
 
 '''SHAPE PROPERTY DESCRIPTORS (DISTRIBUTIONS)'''
-def calculate_a3(rand_mesh_vertices):
-    '''angle between 3 random vertices'''
+def calculate_a3(mesh):
+    '''given an array of three-sized arrays (vertices),
+    return the angles between every 3 vertices'''
     # taken from: https://stackoverflow.com/a/35178910
 
-    ba = rand_mesh_vertices[0] - rand_mesh_vertices[1]
-    bc = rand_mesh_vertices[2] - rand_mesh_vertices[1]
+    results = []
+    for vertex in mesh.vertices:
 
-    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
-    angle = np.arccos(cosine_angle)
+        # get a, b, c as the elements of the vertices list
+        a, b, c = vertex[0], vertex[1], vertex[2]
+        ba = a - b
+        bc = b - c
 
-    return np.degrees(angle)
+        # calculate angle between the two lines and append it to the results
+        cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+        angle = np.arccos(cosine_angle)
+        results.append(np.degrees(angle))
 
-def calculate_d1(mesh_vertices):
-    '''distance between barycenter and random vertex'''
+    return results
+calculate_a3(mesh)
 
-    return np.sqrt(np.sum(np.square(mesh.centroid - random.choice(random.choice(mesh_vertices)))))
+def calculate_d1(mesh):
+    '''given a mesh, return the distances between barycenter and all vertices'''
 
-def calculate_d2(mesh_vertices):
-    '''square root of area of triangle given by 3 random vertices'''
+    results = []
+    for vertex in mesh.vertices:
 
-    return np.sqrt(np.sum(np.square(random.choice(mesh_vertices), random.choice(mesh_vertices))))
+        # get distance between centroid and vertex and append it to results
+        result = float(np.sqrt(np.sum(np.square(mesh.centroid - vertex))))
+        results.append(result)
+    
+    return results
+calculate_d1(mesh)
 
-def calculate_d3(mesh_vertices):
-    '''square root of area of triangle given by 3 random vertices'''
+def calculate_d2(mesh):
+    '''given a mesh, return the distances between pairs of vertices'''
 
-    v1 = random.choice(mesh_vertices)
-    v2 = random.choice(mesh_vertices)
-    x1, x2, x3 = v1[0], v1[1], v1[2]
-    y1, y2, y3 = v2[0], v2[1], v2[2]
+    # get distance between consecutive pairs of vertices
+    dist_pairs = [[float(np.sqrt(np.sum(np.square((mesh.vertices[i], mesh.vertices[i + 1])))))]
+                for i in range(len(mesh.vertices) - 1)]
+    flat_dist_pairs = [item for sublist in dist_pairs for item in sublist]
+    
+    return flat_dist_pairs
+calculate_d2(mesh)
 
-    return np.sqrt(abs((0.5)*(x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2))))
+def calculate_d3(mesh):
+    '''given a mesh, return the square root of areas of triangles calculated by each 3 vertices'''
 
-def calculate_d4(mesh_vertices):
+    results = []
+    for vertex in mesh.vertices:
+
+        # get a, b, c as the elements of the vertices list
+        a, b, c = vertex[0], vertex[1], vertex[2]
+
+        # calculate the semi-perimeter
+        s = (a + b + c) / 2
+
+        # calculate the area
+        area = (s*(s-a)*(s-b)*(s-c)) ** 0.5
+        result = float(np.sqrt(area))
+        results.append(result)
+
+    return results
+calculate_d3(mesh)
+
+def calculate_d4(mesh):
     '''cube root of volume of tetrahedron formed by 4 random vertices'''
 
     v1 = random.choice(mesh_vertices)
@@ -119,3 +120,47 @@ def calculate_d4(mesh_vertices):
     v4 = random.choice(mesh_vertices)
 
     pass # to complete
+
+def extract_features(root):
+    '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
+    and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
+
+    # initialize dictionary holding feature values
+    features = {'area': [], 'volume': [], 'aabb_volume': [], 'compactness': [], 'diameter': [], 'eccentricity': [],
+                'A3': [], 'D1': [], 'D2': [], 'D3': [], 'D4': []}
+
+    for file in os.listdir(root)[:5]:
+        mesh = trimesh.load(root + file)
+        features['area'].append(mesh.area)
+        features['volume'].append(mesh.volume)
+        features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
+        features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
+        # features['diameter'].append()
+        # features['eccentricity'].append()
+        features['A3'].append(calculate_a3(mesh))
+        features['D1'].append(calculate_d1(mesh))
+        features['D2'].append(calculate_d2(mesh))
+        features['D3'].append(calculate_d3(mesh))
+        # features['D4'].append(calculate_d4(mesh))
+
+        print(f"processed {file}")
+
+    features_matrix = pd.DataFrame.from_dict(features, orient='index')
+    features_matrix = features_matrix.transpose()
+    return features_matrix
+
+features_matrix = extract_features(root='./normalized-psb-db/')
+features_matrix.head()
+
+def dist_heatmap(features_matrix:dict):
+    '''Function that takes a feature matrix (N*D, where N is the number of shapes and D is the number of descriptors),
+    converts it to a dataframe'''
+    from scipy.spatial import distance_matrix
+
+    d_m =  pd.DataFrame(distance_matrix(features_matrix.values, features_matrix.values),
+                        index=features_matrix.index, columns=features_matrix.index)
+    sns.set(rc = {'figure.figsize':(15, 10)})
+
+    return sns.heatmap(d_m, annot=False).set(title='Heatmap of distance matrix between feature vectors.')
+
+dist_heatmap(features_matrix)
