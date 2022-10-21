@@ -30,7 +30,6 @@ import numpy as np
 import os
 import pandas as pd
 from math import dist
-import matplotlib.pyplot as plt
 import seaborn as sns
 
 # load sample mesh
@@ -42,8 +41,32 @@ area = mesh.area
 volume = mesh.volume # this quantity only makes sense if the mesh has no holes (watertight)
 aabb_volume = mesh.bounding_box_oriented.volume
 compactness = pow(area, 3) / pow(volume, 2)
-# calculate diameter
-# calculate eccentricity
+
+def get_diameter(mesh):
+    '''given a mesh, get the furthest points on the convex haul and then try all possible combinations
+    of the distances between points and return the max one'''
+    
+    convex_hull = mesh.convex_hull
+    max_dist = 0
+
+    for v1, v2 in zip(convex_hull.vertices, convex_hull.vertices):
+        if (v1 != v2).any():
+            dist = np.linalg.norm(v1 - v2)
+            if dist > max_dist:
+                max_dist = dist
+
+    return max_dist
+diameter = get_diameter(mesh)
+
+def get_eccentricity(mesh):
+    '''same as for alignment: given a mesh, get the covariance matrix of the vertices, get eigens
+    and then divide the largest value over the smallest'''
+
+    covariance = np.cov(np.transpose(mesh.vertices()))
+    eigenvalues, eigenvectors = np.linalg.eig(covariance)
+
+    return np.max(eigenvalues) / np.min(eigenvalues)
+eccentricity = get_eccentricity(mesh)
 
 '''SHAPE PROPERTY DESCRIPTORS (DISTRIBUTIONS)'''
 def calculate_a3(mesh):
@@ -135,8 +158,8 @@ def extract_features(root):
         features['volume'].append(mesh.volume)
         features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
         features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
-        # features['diameter'].append()
-        # features['eccentricity'].append()
+        features['diameter'].append(get_diameter(mesh))
+        features['eccentricity'].append(get_eccentricity(mesh))
         features['A3'].append(calculate_a3(mesh))
         features['D1'].append(calculate_d1(mesh))
         features['D2'].append(calculate_d2(mesh))
