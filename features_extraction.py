@@ -45,7 +45,7 @@ compactness = pow(area, 3) / pow(volume, 2)
 def get_diameter(mesh):
     '''given a mesh, get the furthest points on the convex haul and then try all possible combinations
     of the distances between points and return the max one'''
-    
+
     convex_hull = mesh.convex_hull
     max_dist = 0
 
@@ -135,8 +135,9 @@ def calculate_d3(mesh):
 calculate_d3(mesh)
 
 def calculate_d4(mesh):
-    '''cube root of volume of tetrahedron formed by 4 random vertices'''
+    '''given a mesh, return the cube root of volume of tetrahedron formed by 4 random vertices'''
 
+    mesh_vertices = mesh.vertices
     v1 = random.choice(mesh_vertices)
     v2 = random.choice(mesh_vertices)
     v3 = random.choice(mesh_vertices)
