@@ -30,7 +30,7 @@ class ShapeReport:
         self.ranges = {} # can be called externally to re-use ranges elsewhere
         self.data=data
 
-        for column in self.columns:
+        for column in self.columns: # import data corresponding to self.columns and put into histograms
             
             # apply range if given_ranges were passed
             if given_ranges:
@@ -60,10 +60,10 @@ class ShapeReport:
 
         plt.style.use('grayscale')
         
-        for column in self.columns:
+        for column in self.columns: # iterate through the columns of data in the ShapeReport object
 
-            # save the vertex counts distribution
-            counts, bins = self.histograms[column]
+            # save the data from this column to a PDF histogram
+            counts, bins = self.histograms[column] # will give ERROR if 
             _, ax = plt.subplots()
             plt.hist(bins[:-1], bins, weights=counts)
             
