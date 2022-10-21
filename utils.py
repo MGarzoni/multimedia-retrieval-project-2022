@@ -256,6 +256,7 @@ def update_csv(db_path, csv_path, flat_dir = False):
     if flat_dir == True:
         for filename in os.listdir(db_path):
             full_path = os.path.join(db_path, filename)
+
             # consider only 3D mesh files
             if filename.endswith(('.ply', '.obj', '.off')):
                 attributes_dict[filename] = extract_attributes_from_path(full_path)
@@ -271,6 +272,7 @@ def update_csv(db_path, csv_path, flat_dir = False):
                     if filename.endswith(('.ply', '.obj', '.off')):
                         attributes_dict[filename] = extract_attributes_from_path(full_path)
                         print("Extracted attributes of", full_path)
+                        
     # write dictionary to csv
     output = pd.DataFrame.from_dict(attributes_dict, orient='index')
     output.to_csv(csv_path)

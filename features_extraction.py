@@ -31,25 +31,39 @@ import os
 import pandas as pd
 from math import dist
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-# load some test normalized meshes
-root = "./normalized-psb-db/"
-features = {'areas': [], 'volumes': [], 'aabb_volumes': [], 'compactness': []}
-for file in os.listdir(root)[:10]:
-    mesh = trimesh.load(root + file)
-    features['areas'].append(mesh.area)
-    features['volumes'].append(mesh.volume)
-    features['aabb_volumes'].append(mesh.bounding_box_oriented.volume)
-    features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
-print(features)
+def extract_scalar_features(root):
+    '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
+    and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
-current = 0
-next = 1
-areas = features['areas']
-while (current and next) < len(areas):
-    print(dist((areas[current], areas[next]), (areas[next], areas[next+1])))
-    current += 1
-    next += 1
+    features = {'areas': [], 'volumes': [], 'aabb_volumes': [], 'compactness': [], 'diameter': [], 'eccentricity': []}
+    for file in os.listdir(root)[:5]:
+        mesh = trimesh.load(root + file)
+        features['areas'].append(mesh.area)
+        features['volumes'].append(mesh.volume)
+        features['aabb_volumes'].append(mesh.bounding_box_oriented.volume)
+        features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
+
+    features_matrix = pd.DataFrame.from_dict(features)
+    return features_matrix
+
+features_matrix = extract_scalar_features(root='./normalized-psb-db/')
+features_matrix.head()
+
+
+def dist_heatmap(features_matrix:dict):
+    '''Function that takes a feature matrix (N*D, where N is the number of shapes and D is the number of descriptors),
+    converts it to a dataframe'''
+    from scipy.spatial import distance_matrix
+
+    d_m =  pd.DataFrame(distance_matrix(features_matrix.values, features_matrix.values),
+                        index=features_matrix.index, columns=features_matrix.index)
+    sns.set(rc = {'figure.figsize':(15, 10)})
+
+    return sns.heatmap(d_m, annot=True).set(title='Heatmap of distance matrix between feature vectors.')
+
+dist_matrix(features_matrix)
 
 # load sample mesh
 test_mesh = "./normalized/22.off"
