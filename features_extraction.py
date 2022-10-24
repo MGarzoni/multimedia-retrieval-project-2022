@@ -62,7 +62,7 @@ def get_eccentricity(mesh):
     '''same as for alignment: given a mesh, get the covariance matrix of the vertices, get eigens
     and then divide the largest value over the smallest'''
 
-    covariance = np.cov(np.transpose(mesh.vertices()))
+    covariance = np.cov(np.transpose(mesh.vertices))
     eigenvalues, eigenvectors = np.linalg.eig(covariance)
 
     return np.max(eigenvalues) / np.min(eigenvalues)
@@ -88,7 +88,7 @@ def calculate_a3(mesh):
         results.append(np.degrees(angle))
 
     return results
-calculate_a3(mesh)
+a3 = calculate_a3(mesh)
 
 def calculate_d1(mesh):
     '''given a mesh, return the distances between barycenter and all vertices'''
@@ -101,7 +101,7 @@ def calculate_d1(mesh):
         results.append(result)
     
     return results
-calculate_d1(mesh)
+d1 = calculate_d1(mesh)
 
 def calculate_d2(mesh):
     '''given a mesh, return the distances between pairs of vertices'''
@@ -112,7 +112,7 @@ def calculate_d2(mesh):
     flat_dist_pairs = [item for sublist in dist_pairs for item in sublist]
     
     return flat_dist_pairs
-calculate_d2(mesh)
+d2 = calculate_d2(mesh)
 
 def calculate_d3(mesh):
     '''given a mesh, return the square root of areas of triangles calculated by each 3 vertices'''
@@ -132,7 +132,7 @@ def calculate_d3(mesh):
         results.append(result)
 
     return results
-calculate_d3(mesh)
+d3 = calculate_d3(mesh)
 
 def calculate_d4(mesh):
     '''given a mesh, return the cube root of volume of tetrahedron formed by 4 random vertices'''
@@ -145,7 +145,7 @@ def calculate_d4(mesh):
 
     pass # to complete
 
-def extract_features(root):
+def extract_features(root, to_csv=False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
     and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
@@ -153,7 +153,9 @@ def extract_features(root):
     features = {'area': [], 'volume': [], 'aabb_volume': [], 'compactness': [], 'diameter': [], 'eccentricity': [],
                 'A3': [], 'D1': [], 'D2': [], 'D3': [], 'D4': []}
 
-    for file in os.listdir(root)[:5]:
+    from tqdm import tqdm
+
+    for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)
         features['area'].append(mesh.area)
         features['volume'].append(mesh.volume)
@@ -169,11 +171,16 @@ def extract_features(root):
 
         print(f"processed {file}")
 
+    # below i am specifying orient='index' and then transposing the dataframe just cause for now we have some feats (such as D4) which are empty
     features_matrix = pd.DataFrame.from_dict(features, orient='index')
     features_matrix = features_matrix.transpose()
+
+    if to_csv:
+        features_matrix.to_csv('./features/features.csv')
+
     return features_matrix
 
-features_matrix = extract_features(root='./normalized-psb-db/')
+features_matrix = extract_features(root='./normalized-psb-db/', to_csv=True)
 features_matrix.head()
 
 def dist_heatmap(features_matrix:dict):
