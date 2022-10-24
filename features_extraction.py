@@ -36,9 +36,21 @@ import seaborn as sns
 test_mesh = "./normalized-psb-db/24.off"
 mesh = trimesh.load(test_mesh)
 
+# below try to check for mesh to be watertight and try to fix it
+mesh.show()
+if not mesh.is_watertight:
+    mesh.repair.fix_winding()
+    mesh.repair.fix_invertion()
+    mesh.repair.fix_normals()
+    mesh.repair.fix_invertion()
+mesh.show()
+
 '''SIMPLE 3D GLOBAL DESCRIPTORS'''
 area = mesh.area
-volume = mesh.volume # this quantity only makes sense if the mesh has no holes (watertight)
+# volume below makes sense only if:
+    # if all triangles on mesh are consistently oriented
+    # meshes has no holes = is watertight
+volume = mesh.volume
 aabb_volume = mesh.bounding_box_oriented.volume
 compactness = pow(area, 3) / pow(volume, 2)
 

@@ -78,7 +78,7 @@ def scale_to_unit(mesh):
     """Return mesh scaled to unit cube"""
 
     scaled_mesh = mesh.copy()
-    maxsize = np.max(mesh.bounding_box.extents) #find max coordinate magnitude in any dim
+    maxsize = np.max(mesh.bounding_box.extents) # find max coordinate magnitude in any dim
     scaled_mesh.apply_scale((1/maxsize, 1/maxsize, 1/maxsize))
 
     return scaled_mesh
@@ -86,7 +86,7 @@ def scale_to_unit(mesh):
 def display_mesh_with_axes(mesh):
     scene = trimesh.Scene()
     scene.add_geometry(mesh)
-    scene.add_geometry(trimesh.creation.axis(axis_length = 1)) #add x, y, z axes to scene
+    scene.add_geometry(trimesh.creation.axis(axis_length = 1)) # add x, y, z axes to scene
     scene.show(viewer='gl')
 
 def save_mesh_png(mesh, filename, corners = None):
@@ -94,7 +94,7 @@ def save_mesh_png(mesh, filename, corners = None):
 
     scene = trimesh.Scene()
     scene.add_geometry(mesh)
-    scene.add_geometry(trimesh.creation.axis(axis_length = 1)) #add x, y, z axes to scene
+    scene.add_geometry(trimesh.creation.axis(axis_length = 1)) # add x, y, z axes to scene
 
     if corners is None: # add corners
         corners = scene.bounds_corners
@@ -252,7 +252,7 @@ def update_csv(db_path, csv_path, flat_dir = False):
     
     attributes_dict = {}
     
-    #if it's a flat directory
+    # if it's a flat directory
     if flat_dir == True:
         for filename in os.listdir(db_path):
             full_path = os.path.join(db_path, filename)
@@ -268,6 +268,7 @@ def update_csv(db_path, csv_path, flat_dir = False):
             if dirname != ".DS_Store":
                 for filename in os.listdir(os.path.join(db_path, dirname)):
                     full_path = os.path.join(db_path, dirname, filename)
+
                     # consider only 3D mesh files
                     if filename.endswith(('.ply', '.obj', '.off')):
                         attributes_dict[filename] = extract_attributes_from_path(full_path)
