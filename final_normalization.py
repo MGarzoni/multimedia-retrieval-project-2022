@@ -121,34 +121,3 @@ before_rep.save("before_hists")
 after_rep.save("after_hists")
 
 # deprecated code:
-    
-    #histograms, before and after
-    # before_after_hist("./attributes/original-PSB-attributes.csv", "./attributes/normalized-PSB-attributes.csv",
-    #                   attributes = ["area", "num_vertices", "boundingbox_distance", "centroid_to_origin", "boundingbox_diagonal"])
-
-# plot hist to compare size of bounding box before and after normalization
-
-
-# plot hist to compare position of bounding box (distance of its center to the origin) before and after normalization
-
-
-# # save visualization of meshes before and after normalization
-# mesh_before = trimesh.load("./psb-labeled-db/FourLeg/397.off")
-# mesh_after = trimesh.load("./normalized/397.off")
-# before_after(mesh_before, mesh_after)
-
-# # display before and after side by side
-# import cv2
-# img_before = "./pics/before.png"
-# img_after = "./pics/after.png"
-# fig = plt.figure(figsize=(10, 8))
-# img1 = cv2.imread(img_before)
-# img2 = cv2.imread(img_after)
-# fig.add_subplot(1, 2, 1)
-# plt.imshow(img1)
-# plt.axis('off')
-# plt.title("Before normalization")
-# fig.add_subplot(1, 2, 2)
-# plt.imshow(img2)
-# plt.axis('off')
-# plt.title("After normalization")

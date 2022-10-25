@@ -192,7 +192,7 @@ def extract_features(root, to_csv=False):
 
     return features_matrix
 
-features_matrix = extract_features(root='./normalized-psb-db/', to_csv=True)
+features_matrix = extract_features(root='./reduced-normalized-psb-db/', to_csv=True)
 features_matrix.head()
 
 def dist_heatmap(features_matrix:dict):
