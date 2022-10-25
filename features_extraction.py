@@ -195,6 +195,8 @@ def extract_features(root, to_csv=False):
 features_matrix = extract_features(root='./reduced-normalized-psb-db/', to_csv=True)
 features_matrix.head()
 
+features_matrix = pd.read_csv("./features/features.csv")
+
 def dist_heatmap(features_matrix:dict):
     '''Function that takes a feature matrix (N*D, where N is the number of shapes and D is the number of descriptors),
     converts it to a dataframe'''

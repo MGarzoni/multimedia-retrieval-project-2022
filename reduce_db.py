@@ -6,7 +6,9 @@ Created on Tue Oct 25 08:07:07 2022
 @author: eduardsaakashvili
 """
 
-"CREATE A COPY OF THE NORMALIZED DATABASE WITH 3 OBJECTS PER CATEGORY, ALSO A NEW ATTRIBUTES CSV FILE"
+"CREATE A COPY OF THE NORMALIZED DATABASE WITH N OBJECTS PER CATEGORY, ALSO A NEW ATTRIBUTES CSV FILE"
+
+N = 2
 
 import pandas as pd
 import os
@@ -31,7 +33,7 @@ for filename in os.listdir(new_folder_path):
 
 for category in categories:
     #sample 3 files from this category
-    category_df = original_df[original_df["category"] == category].sample(3, random_state = 42)
+    category_df = original_df[original_df["category"] == category].sample(N, random_state = 42)
     paths = list(category_df["path"])
     paths_to_keep += paths # add to list of paths to keep
     
