@@ -1,5 +1,6 @@
 from utils import *
 from reporting import ShapeReport as report
+import open3d
 
 def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     """This function takes a database, iteratively gets a shape from a category and
@@ -33,16 +34,27 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
                     # load mesh from path
                     mesh = trimesh.load(full_path)
     
-                    # if it's an OUTLIER, remesh until we reach REMESH_THRESHOLD (parameter set in utils)
-                    if shape_attributes['is_out']:
-                        print(f"\n{shape_attributes['filename']} is an outlier!")
-    
-                        # trying to use mesh.subdivide() for resampling
-                        print("# vertices:", len(mesh.vertices))
-                        
-                        while len(mesh.vertices) < REMESH_THRESHOLD:
+                    # if mesh has less than 3500 vertices (IS_OUT_LOW), then subdivide and remesh
+                    if shape_attributes['is_out_low']:
+                        print(f"\n{shape_attributes['filename']} is an outlier because it has less than 3500 vertices")
+                        print("# vertices before refinement:", len(mesh.vertices))
+
+                        # while the # vertices is lower than 3500
+                        # use mesh.subdivide() for resampling
+                        while len(mesh.vertices) <= IS_OUT_LOW:
                             mesh = mesh.subdivide()
                             print("# vertices after subdivide:", len(mesh.vertices))
+
+                    # if mesh has more than 17500 vertices (IS_OUT_HIGH), then remove vertices and remesh
+                    if shape_attributes['is_out_high']:
+                        print(f"\n{shape_attributes['filename']} is an outlier because it has more than 17500 vertices")
+                        print("# vertices before refinement:", len(mesh.vertices))
+
+                        # while the # vertices is higher than 17500
+                        # use open3d for decreasing # vertices
+                        while len(mesh.vertices) >= IS_OUT_HIGH:
+                            # do decimation here
+                            print("# vertices after open3d decimation:", len(mesh.vertices))
                     
                     # print initial attributes csv
                     # if verbose: print("Initial attributes:", shape_attributes)
@@ -119,5 +131,3 @@ after_rep = report(after, given_ranges=before_rep.ranges)
 # export histograms into folders
 before_rep.save("before_hists")
 after_rep.save("after_hists")
-
-# deprecated code:

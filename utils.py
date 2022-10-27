@@ -22,7 +22,8 @@ PRINCETON_PATH = "./princeton-labeled-db/"
 PSB_PATH = "./psb-labeled-db/"
 
 # parameters
-REMESH_THRESHOLD = 3500
+IS_OUT_LOW = 3500
+IS_OUT_HIGH = 17500
 
 def extract_attributes_from_path(mesh_path):
     """Given a path, loads the mesh, checks if it's an outlier,
@@ -32,7 +33,7 @@ def extract_attributes_from_path(mesh_path):
 
     return extract_attributes_from_mesh(mesh, mesh_path)
 
-def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(REMESH_THRESHOLD)):
+def extract_attributes_from_mesh(mesh, mesh_path):
     """Extract features from a mesh that has already been loaded"""
     
     # get moments of inertia just ONCE
@@ -47,7 +48,9 @@ def extract_attributes_from_mesh(mesh, mesh_path, outliers_range=range(REMESH_TH
                 "faces_type" : 'triangles',
                 "axis_aligned_bounding_box" : mesh.bounding_box.extents,
                 "boundingbox_diagonal": sqrt(sum([x*x for x in mesh.bounding_box.extents])), # diagonal of bounding box
-                "is_out" : True if len(mesh.vertices) in outliers_range else False,
+                "has_holes" : True if not mesh.is_watertight else False,
+                "is_out_low" : True if len(mesh.vertices) <= IS_OUT_LOW else False,
+                "is_out_high" : True if len(mesh.vertices) >= IS_OUT_HIGH else False,
                 "centroid" : mesh.centroid,
                 "centroid_to_origin" : sqrt(sum([x*x for x in mesh.centroid])), # distance of centroid to origin
                 "boundingbox_distance":sqrt(sum([x*x for x in 0.5*(mesh.bounds[1]+mesh.bounds[0])])), # boundingbox center, distance to origin

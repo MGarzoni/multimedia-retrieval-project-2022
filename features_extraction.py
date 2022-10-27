@@ -31,19 +31,33 @@ import os
 import pandas as pd
 from math import dist
 import seaborn as sns
+import open3d
 
 # load sample mesh
-test_mesh = "./normalized-psb-db/24.off"
+test_mesh = "./psb-labeled-db/Armadillo/284.off"
 mesh = trimesh.load(test_mesh)
+print("# vertices before open3d decimation:", len(mesh.vertices))
+mesh.show()
 
-# below try to check for mesh to be watertight and try to fix it
-mesh.show()
-if not mesh.is_watertight:
-    mesh.repair.fix_winding()
-    mesh.repair.fix_invertion()
-    mesh.repair.fix_normals()
-    mesh.repair.fix_invertion()
-mesh.show()
+# mesh_to_decimate = open3d.io.read_triangle_mesh(test_mesh)
+# mesh_to_decimate = mesh_to_decimate.simplify_quadric_decimation(17500)
+# open3d.io.write_triangle_mesh("./armadillo-284-decimated.off", mesh_to_decimate)
+
+decimated_mesh = trimesh.load("./armadillo-284-decimated.off")
+print("# vertices after open3d decimation:", len(decimated_mesh.vertices))
+decimated_mesh.show()
+
+root = "./normalized-psb-db/"
+for mesh in os.listdir(root):
+    if ".txt" not in mesh:
+        mesh = trimesh.load(root + mesh)
+        if not mesh.is_watertight:
+            print('mesh has holes:')
+            print(f"\tmesh volume before stitching: {mesh.volume}")
+            mesh.fill_holes()
+            print(f"\tmesh volume after stitching {mesh.volume}")
+        else:
+            print('mesh has NO holes')
 
 '''SIMPLE 3D GLOBAL DESCRIPTORS'''
 area = mesh.area
@@ -120,7 +134,7 @@ def calculate_d2(mesh):
 
     # get distance between consecutive pairs of vertices
     dist_pairs = [[float(np.sqrt(np.sum(np.square((mesh.vertices[i], mesh.vertices[i + 1])))))]
-                for i in range(len(mesh.vertices) - 1)]
+                for i in range(mesh.vertices[1000:1005] - 1)]
     flat_dist_pairs = [item for sublist in dist_pairs for item in sublist]
     
     return flat_dist_pairs
@@ -170,7 +184,7 @@ def extract_features(root, to_csv=False):
     for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)
         features['area'].append(mesh.area)
-        features['volume'].append(mesh.volume)
+        features['volume'].append(mesh.volume) # no need to check if mesh has holes cause already checked that no mesh does
         features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
         features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
         features['diameter'].append(get_diameter(mesh))
