@@ -43,17 +43,24 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
                         # use mesh.subdivide() for resampling
                         while len(mesh.vertices) <= IS_OUT_LOW:
                             mesh = mesh.subdivide()
-                            print("# vertices after subdivide:", len(mesh.vertices))
+                            print("# vertices after subdivision:", len(mesh.vertices))
 
                     # if mesh has more than 17500 vertices (IS_OUT_HIGH), then remove vertices and remesh
                     if shape_attributes['is_out_high']:
                         print(f"\n{shape_attributes['filename']} is an outlier because it has more than 17500 vertices")
-                        print("# vertices before refinement:", len(mesh.vertices))
+                        print("# vertices before open3d decimation:", len(mesh.vertices))
 
                         # while the # vertices is higher than 17500
                         # use open3d for decreasing # vertices
                         while len(mesh.vertices) >= IS_OUT_HIGH:
-                            # do decimation here
+
+                            # here find a way to store the decimated mesh as a temp file
+                            
+                            mesh_to_decimate = open3d.io.read_triangle_mesh(mesh)
+                            mesh_to_decimate = mesh_to_decimate.simplify_quadric_decimation(17500)
+                            open3d.io.write_triangle_mesh(f"{shape_attributes['path']}", mesh_to_decimate)
+
+                            mesh = trimesh.load(f"{shape_attributes['path']}")
                             print("# vertices after open3d decimation:", len(mesh.vertices))
                     
                     # print initial attributes csv
