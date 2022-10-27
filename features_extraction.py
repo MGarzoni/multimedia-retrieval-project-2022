@@ -31,6 +31,13 @@ import os
 import pandas as pd
 from math import dist
 import seaborn as sns
+import random
+from matplotlib import pyplot as plt
+
+SAMPLE_N = 2000
+BINS = 50
+random.seed(42)
+
 
 # load sample mesh
 test_mesh = "./normalized-psb-db/24.off"
@@ -53,6 +60,15 @@ area = mesh.area
 volume = mesh.volume
 aabb_volume = mesh.bounding_box_oriented.volume
 compactness = pow(area, 3) / pow(volume, 2)
+
+def density_histogram(values, range = None):
+    """Integrates to 1, BINS nr of bins"""
+    return np.histogram(values, range = range, bins = BINS, density = True)
+
+def plot_hist(histogram):
+    """Take as input the output of density_histogram"""
+    hist, bins = histogram
+    plt.step(bins[:-1], hist)
 
 def get_diameter(mesh):
     '''given a mesh, get the furthest points on the convex haul and then try all possible combinations
@@ -116,14 +132,19 @@ def calculate_d1(mesh):
 d1 = calculate_d1(mesh)
 
 def calculate_d2(mesh):
-    '''given a mesh, return the distances between pairs of vertices'''
-
-    # get distance between consecutive pairs of vertices
-    dist_pairs = [[float(np.sqrt(np.sum(np.square((mesh.vertices[i], mesh.vertices[i + 1])))))]
-                for i in range(len(mesh.vertices) - 1)]
-    flat_dist_pairs = [item for sublist in dist_pairs for item in sublist]
+    '''given a mesh, return hist of distances between SAMPLE_N pairs of vertices
+    Range is set to 0, 1.5 as a greater distance is not possible due to unit cube normalization'''
     
-    return flat_dist_pairs
+    # generatre N pairs (could be repeats)
+    pairs = [random.sample(list(mesh.vertices), 2) for i in range(SAMPLE_N)]
+
+    # get distance between each pair of vertices
+    distances = [float(np.sqrt(np.sum(np.square(pair[1]-pair[0]))))
+                for pair in pairs]
+    
+    
+    return density_histogram(distances, range = (0, 1.5))
+
 d2 = calculate_d2(mesh)
 
 def calculate_d3(mesh):
@@ -191,11 +212,7 @@ def extract_features(root, to_csv=False):
         features_matrix.to_csv('./features/features.csv')
 
     return features_matrix
-
-features_matrix = extract_features(root='./reduced-normalized-psb-db/', to_csv=True)
-features_matrix.head()
-
-features_matrix = pd.read_csv("./features/features.csv")
+    
 
 def dist_heatmap(features_matrix:dict):
     '''Function that takes a feature matrix (N*D, where N is the number of shapes and D is the number of descriptors),
@@ -208,4 +225,9 @@ def dist_heatmap(features_matrix:dict):
 
     return sns.heatmap(d_m, annot=False).set(title='Heatmap of distance matrix between feature vectors.')
 
-dist_heatmap(features_matrix)
+# features_matrix = extract_features(root='./reduced-normalized-psb-db/', to_csv=True)
+# features_matrix.head()
+
+# features_matrix = pd.read_csv("./features/features.csv")
+
+# dist_heatmap(features_matrix)
