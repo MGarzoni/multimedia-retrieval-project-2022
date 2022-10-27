@@ -30,12 +30,16 @@ import numpy as np
 import os
 import pandas as pd
 from math import dist, hypot, sqrt
+import math
 import seaborn as sns
 import random
 from matplotlib import pyplot as plt
 
-SAMPLE_N = 2000
-BINS = 50
+
+# for histograms:
+SAMPLE_N = 2000 #nr random samples taken for each distributional feature
+BINS = 10
+
 random.seed(42)
 
 
@@ -49,30 +53,23 @@ mesh.show()
 # mesh_to_decimate = mesh_to_decimate.simplify_quadric_decimation(17500)
 # open3d.io.write_triangle_mesh("./armadillo-284-decimated.off", mesh_to_decimate)
 
-decimated_mesh = trimesh.load("./armadillo-284-decimated.off")
-print("# vertices after open3d decimation:", len(decimated_mesh.vertices))
-decimated_mesh.show()
+# # decimated_mesh = trimesh.load("./armadillo-284-decimated.off")
+# # print("# vertices after open3d decimation:", len(decimated_mesh.vertices))
+# # decimated_mesh.show()
 
-root = "./normalized-psb-db/"
-for mesh in os.listdir(root):
-    if ".txt" not in mesh:
-        mesh = trimesh.load(root + mesh)
-        if not mesh.is_watertight:
-            print('mesh has holes:')
-            print(f"\tmesh volume before stitching: {mesh.volume}")
-            mesh.fill_holes()
-            print(f"\tmesh volume after stitching {mesh.volume}")
-        else:
-            print('mesh has NO holes')
+# root = "./normalized-psb-db/"
+# for mesh in os.listdir(root):
+#     if ".txt" not in mesh:
+#         mesh = trimesh.load(root + mesh)
+#         if not mesh.is_watertight:
+#             print('mesh has holes:')
+#             print(f"\tmesh volume before stitching: {mesh.volume}")
+#             mesh.fill_holes()
+#             print(f"\tmesh volume after stitching {mesh.volume}")
+#         else:
+#             print('mesh has NO holes')
 
-'''SIMPLE 3D GLOBAL DESCRIPTORS'''
-area = mesh.area
-# volume below makes sense only if:
-    # if all triangles on mesh are consistently oriented
-    # meshes has no holes = is watertight
-volume = mesh.volume
-aabb_volume = mesh.bounding_box_oriented.volume
-compactness = pow(area, 3) / pow(volume, 2)
+
 
 def density_histogram(values, range = None):
     """Integrates to 1, BINS nr of bins"""
@@ -97,7 +94,6 @@ def get_diameter(mesh):
                 max_dist = dist
 
     return max_dist
-diameter = get_diameter(mesh)
 
 def get_eccentricity(mesh):
     '''same as for alignment: given a mesh, get the covariance matrix of the vertices, get eigens
@@ -114,46 +110,67 @@ def calculate_a3(mesh):
     '''given an array of three-sized arrays (vertices),
     return the angles between every 3 vertices'''
     # taken from: https://stackoverflow.com/a/35178910
+    
+    vertices = list(mesh.vertices)
+
+    # generatre N trios of vertices (could be repeats)
+    trios = [random.sample(vertices, 3) for i in range(SAMPLE_N)]
 
     results = []
-    for vertex in mesh.vertices:
 
-        # get a, b, c as the elements of the vertices list
-        a, b, c = vertex[0], vertex[1], vertex[2]
-        ba = a - b
-        bc = b - c
+    for trio in trios:
 
-        # calculate angle between the two lines and append it to the results
-        cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+        # three points
+        a, b, c = trio
+        
+        # create two vectors defining the triangle
+        ab = b-a
+        ac = c-a
+        
+        cosine_angle = np.dot(ab, ac) / (np.linalg.norm(ab) * np.linalg.norm(ac))
         angle = np.arccos(cosine_angle)
-        results.append(np.degrees(angle))
+                
+        results.append(angle)
 
-    return results
-a3 = calculate_a3(mesh)
+    return density_histogram(results, range=(0, math.pi))
+
 
 def calculate_d1(mesh):
-    '''given a mesh, return the distances between barycenter and all vertices'''
+    '''given a mesh, return density histogrma of distances between barycenter and SAMPLE_N vertices
+    Due to scaling ot unit cube distances will not be greater than 1.5'''
 
     results = []
-    for vertex in mesh.vertices:
+    
+    center = mesh.centroid
+    all_vertices = list(mesh.vertices)
+    
+    vertices = random.sample(all_vertices, 1000) # repeats are possible
+    
+    for vertex in vertices:
 
         # get distance between centroid and vertex and append it to results
-        result = float(np.sqrt(np.sum(np.square(mesh.centroid - vertex))))
+        result = float(np.sqrt(np.sum(np.square(vertex - center))))
         results.append(result)
     
-    return results
-d1 = calculate_d1(mesh)
+    return density_histogram(results, range = (0, 1.5) )
+
 
 def calculate_d2(mesh):
-    '''given a mesh, return the distances between pairs of vertices'''
+    '''given a mesh, return hist of distances between SAMPLE_N pairs of vertices
+     Range is set to 0, 1.5 as a greater distance is not possible due to unit cube normalization'''
 
-    # get distance between consecutive pairs of vertices
-    dist_pairs = [[float(np.sqrt(np.sum(np.square((mesh.vertices[i], mesh.vertices[i + 1])))))]
-                for i in range(len(mesh.vertices) - 1)]
-    flat_dist_pairs = [item for sublist in dist_pairs for item in sublist]
+    vertices = list(mesh.vertices)
+
+    # generatre N pairs (could be repeats)
+    pairs = [random.sample(vertices, 2) for i in range(SAMPLE_N)]
     
-    return flat_dist_pairs
-d2 = calculate_d2(mesh)
+    # get distance between each pair of vertices
+    distances = [float(np.sqrt(np.sum(np.square(pair[1]-pair[0]))))
+               for pair in pairs]
+    
+    
+    return density_histogram(distances, range = (0, 1.5))
+
 
 def calculate_d3(mesh):
     '''given a mesh, return the square roots of areas of SAMPLE_N triangles
@@ -188,18 +205,25 @@ def calculate_d3(mesh):
 
     return density_histogram(sqr_areas, range=(0, 0.85))
 
-d3 = calculate_d3(mesh)
 
 def calculate_d4(mesh):
     '''given a mesh, return the cube roots of volume of 
-    SAMPLE_N tetrahedrons formed by 4 random vertices'''
+    SAMPLE_N tetrahedrons formed by 4 random vertices
+    Volume could not be greater than 1 due to unit cube bounding box'''
 
-    vertices = mesh.vertices
+    vertices = list(mesh.vertices)
     quartets = [random.sample(vertices, 4) for i in range(SAMPLE_N)]
     
+    results = []
+    
+    for p1, p2, p3, p4 in quartets:
+        volume = (1/6) * abs(np.linalg.det((p1-p4, p2-p4, p3-p4))) # formula from Wikipedia
+        results.append(np.cbrt(volume)) # add cubic root of volume to results
     
 
-    pass # to complete
+    return density_histogram(results, range = (0, 1))
+
+
 
 def extract_features(root, to_csv=False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
@@ -247,6 +271,30 @@ def dist_heatmap(features_matrix:dict):
     sns.set(rc = {'figure.figsize':(15, 10)})
 
     return sns.heatmap(d_m, annot=False).set(title='Heatmap of distance matrix between feature vectors.')
+
+
+'''SIMPLE 3D GLOBAL DESCRIPTORS'''
+area = mesh.area
+# volume below makes sense only if:
+    # if all triangles on mesh are consistently oriented
+    # meshes has no holes = is watertight
+volume = mesh.volume
+aabb_volume = mesh.bounding_box_oriented.volume
+compactness = pow(area, 3) / pow(volume, 2)
+diameter = get_diameter(mesh)
+
+
+print("Computed simple descriptors")
+
+
+# Distributions of descriptors:
+a3 = calculate_a3(mesh)
+d1 = calculate_d1(mesh)
+d2 = calculate_d2(mesh)
+d3 = calculate_d3(mesh)
+d4 = calculate_d4(mesh)
+
+plot_hist(d4)
 
 # features_matrix = extract_features(root='./reduced-normalized-psb-db/', to_csv=True)
 # features_matrix.head()
