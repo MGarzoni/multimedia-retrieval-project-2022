@@ -59,10 +59,7 @@ hist_features = features_matrix[['A3', 'D1', 'D2', 'D3', 'D4']]
 scaled_scalar_features = StandardScaler().fit_transform(scalar_features)
 
 # normalize hist feats
-weights = np.ones_like(hist_features['A3']) / float(len(hist_features['A3']))
-p = plt.hist(hist_features['A3'], weights=weights)
-plt.ylim(0,1)
-plt.show()
+
 
 # create new cvs with normalized feats
 

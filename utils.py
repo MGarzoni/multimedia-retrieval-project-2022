@@ -23,7 +23,7 @@ PSB_PATH = "./psb-labeled-db/"
 
 # parameters
 IS_OUT_LOW = 3500
-IS_OUT_HIGH = 17500
+IS_OUT_HIGH = 35000
 
 def extract_attributes_from_path(mesh_path):
     """Given a path, loads the mesh, checks if it's an outlier,

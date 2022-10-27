@@ -1,29 +1,3 @@
-
-"""
-Compute the following 3D elementary descriptors presented in Module 4: Feature extraction:
-
-    surface area
-    compactness (with respect to a sphere)
-    axis-aligned bounding-box volume
-    diameter
-    eccentricity (ratio of largest to smallest eigenvalues of covariance matrix) 
-
-All above are simple global descriptors, that is, they yield a single real value.
-
-Besides these, compute also the following shape property descriptors:
-
-    a3: angle between 3 random vertices
-    D1: distance between barycenter and random vertex
-    D2: distance between 2 random vertices
-    D3: square root of area of triangle given by 3 random vertices
-    D4: cube root of volume of tetrahedron formed by 4 random vertices 
-
-These last five descriptors are distributions, not single values. Reduce them to a fixed-length descriptor using histograms.
-For this, compute these descriptors for a given (large) number of random points on a given shape (you see now why you need to have finely-meshed shapes?).
-Next, bin the ranges of these descriptors on a fixed number of bins B, e.g., 8..10, and compute how many values fall within each bin.
-This gives you a B-dimensional descriptor.
-"""
-
 import trimesh
 import random
 import numpy as np
@@ -35,26 +9,11 @@ import seaborn as sns
 import random
 from matplotlib import pyplot as plt
 
-
-# for histograms:
-SAMPLE_N = 2000 #nr random samples taken for each distributional feature
-BINS = 10
-
-random.seed(42)
-
 # load sample mesh
 test_mesh = "./psb-labeled-db/Armadillo/284.off"
 mesh = trimesh.load(test_mesh)
-print("# vertices before open3d decimation:", len(mesh.vertices))
 
-# mesh_to_decimate = open3d.io.read_triangle_mesh(test_mesh)
-# mesh_to_decimate = mesh_to_decimate.simplify_quadric_decimation(17500)
-# open3d.io.write_triangle_mesh("./armadillo-284-decimated.off", mesh_to_decimate)
-
-# # decimated_mesh = trimesh.load("./armadillo-284-decimated.off")
-# # print("# vertices after open3d decimation:", len(decimated_mesh.vertices))
-# # decimated_mesh.show()
-
+# code below to check if any shape has holes
 # root = "./normalized-psb-db/"
 # for mesh in os.listdir(root):
 #     if ".txt" not in mesh:
@@ -67,16 +26,11 @@ print("# vertices before open3d decimation:", len(mesh.vertices))
 #         else:
 #             print('mesh has NO holes')
 
-
-
-def density_histogram(values, range = None):
-    """Integrates to 1, BINS nr of bins"""
-    return np.histogram(values, range = range, bins = BINS, density = True)
-
-def plot_hist(histogram):
-    """Take as input the output of density_histogram"""
-    hist, bins = histogram
-    plt.step(bins[:-1], hist)
+'''SIMPLE 3D GLOBAL DESCRIPTORS'''
+area = mesh.area
+volume = mesh.volume
+aabb_volume = mesh.bounding_box_oriented.volume
+compactness = pow(area, 3) / pow(volume, 2)
 
 def get_diameter(mesh):
     '''given a mesh, get the furthest points on the convex haul and then try all possible combinations
@@ -92,6 +46,7 @@ def get_diameter(mesh):
                 max_dist = dist
 
     return max_dist
+diameter = get_diameter(mesh)
 
 def get_eccentricity(mesh):
     '''same as for alignment: given a mesh, get the covariance matrix of the vertices, get eigens
@@ -104,10 +59,23 @@ def get_eccentricity(mesh):
 eccentricity = get_eccentricity(mesh)
 
 '''SHAPE PROPERTY DESCRIPTORS (DISTRIBUTIONS)'''
+# constants for histograms
+SAMPLE_N = 2000 # nr random samples taken for each distributional feature
+BINS = 10
+random.seed(42)
+
+def density_histogram(values, range = None):
+    """Integrates to 1, BINS nr of bins"""
+    return np.histogram(values, range = range, bins = BINS, density = True)
+
+def plot_hist(histogram):
+    """Take as input the output of density_histogram"""
+    hist, bins = histogram
+    plt.step(bins[:-1], hist)
+
 def calculate_a3(mesh):
     '''given an array of three-sized arrays (vertices),
     return the angles between every 3 vertices'''
-    # taken from: https://stackoverflow.com/a/35178910
     
     vertices = list(mesh.vertices)
 
@@ -132,7 +100,6 @@ def calculate_a3(mesh):
 
     return density_histogram(results, range=(0, math.pi))
 
-
 def calculate_d1(mesh):
     '''given a mesh, return density histogrma of distances between barycenter and SAMPLE_N vertices
     Due to scaling ot unit cube distances will not be greater than 1.5'''
@@ -150,8 +117,7 @@ def calculate_d1(mesh):
         result = float(np.sqrt(np.sum(np.square(vertex - center))))
         results.append(result)
     
-    return density_histogram(results, range = (0, 1.5) )
-
+    return density_histogram(results, range = (0, 1.5))
 
 def calculate_d2(mesh):
     '''given a mesh, return hist of distances between SAMPLE_N pairs of vertices
@@ -168,7 +134,6 @@ def calculate_d2(mesh):
     
     
     return density_histogram(distances, range = (0, 1.5))
-
 
 def calculate_d3(mesh):
     '''given a mesh, return the square roots of areas of SAMPLE_N triangles
@@ -203,7 +168,6 @@ def calculate_d3(mesh):
 
     return density_histogram(sqr_areas, range=(0, 0.85))
 
-
 def calculate_d4(mesh):
     '''given a mesh, return the cube roots of volume of 
     SAMPLE_N tetrahedrons formed by 4 random vertices
@@ -218,85 +182,94 @@ def calculate_d4(mesh):
         volume = (1/6) * abs(np.linalg.det((p1-p4, p2-p4, p3-p4))) # formula from Wikipedia
         results.append(np.cbrt(volume)) # add cubic root of volume to results
     
-
     return density_histogram(results, range = (0, 1))
 
-
-
-def extract_features(root, to_csv=False):
+'''FEATURE EXTRACTION'''
+def extract_scalar_features(root, to_csv=False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
     and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
     # initialize dictionary holding feature values
-    features = {'area': [], 'volume': [], 'aabb_volume': [], 'compactness': [], 'diameter': [], 'eccentricity': [],
-                'A3': [], 'D1': [], 'D2': [], 'D3': [], 'D4': []}
+    scalar_features = {'area': [], 'volume': [], 'aabb_volume': [], 'compactness': [], 'diameter': [], 'eccentricity': []}
 
     from tqdm import tqdm
 
     for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)
-        features['area'].append(mesh.area)
-        features['volume'].append(mesh.volume) # no need to check if mesh has holes cause already checked that no mesh does
-        features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
-        features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
-        features['diameter'].append(get_diameter(mesh))
-        features['eccentricity'].append(get_eccentricity(mesh))
-        features['A3'].append(calculate_a3(mesh))
-        features['D1'].append(calculate_d1(mesh))
-        features['D2'].append(calculate_d2(mesh))
-        features['D3'].append(calculate_d3(mesh))
-        features['D4'].append(calculate_d4(mesh))
+        scalar_features['area'].append(mesh.area)
+        scalar_features['volume'].append(mesh.volume) # no need to check if mesh has holes cause already checked that no mesh does
+        scalar_features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
+        scalar_features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
+        scalar_features['diameter'].append(get_diameter(mesh))
+        scalar_features['eccentricity'].append(get_eccentricity(mesh))
 
-        print(f"processed {file}")
+        # print(f"processed {file}")
 
-    # below i am specifying orient='index' and then transposing the dataframe just cause for now we have some feats (such as D4) which are empty
-    features_matrix = pd.DataFrame.from_dict(features, orient='index')
-    features_matrix = features_matrix.transpose()
+    # construct df holding feat values
+    scalar_features_matrix = pd.DataFrame.from_dict(scalar_features)
 
+    # export to csv
     if to_csv:
-        features_matrix.to_csv('./features/features.csv')
+        scalar_features_matrix.to_csv('./features/scalar_features.csv')
 
-    return features_matrix
-    
+    return scalar_features_matrix
 
-def dist_heatmap(features_matrix:dict):
-    '''Function that takes a feature matrix (N*D, where N is the number of shapes and D is the number of descriptors),
-    converts it to a dataframe'''
-    from scipy.spatial import distance_matrix
+extract_scalar_features("./normalized-psb-db/", to_csv=True)
 
-    d_m =  pd.DataFrame(distance_matrix(features_matrix.values, features_matrix.values),
-                        index=features_matrix.index, columns=features_matrix.index)
-    sns.set(rc = {'figure.figsize':(15, 10)})
+def extract_hist_features(root, to_csv=False):
+    '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
+    and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
-    return sns.heatmap(d_m, annot=False).set(title='Heatmap of distance matrix between feature vectors.')
+    # initialize dictionary holding feature values
+    hist_features = {'A3_0': float, 'A3_1': float, 'A3_2': float, 'A3_3': float, 'A3_4': float, 'A3_5': float, 'A3_6': float, 'A3_7': float, 'A3_8': float, 'A3_9': float,
+                'D1_0': float, 'D1_1': float, 'D1_2': float, 'D1_3': float, 'D1_4': float, 'D1_5': float, 'D1_6': float, 'D1_7': float, 'D1_8': float, 'D1_9': float,
+                'D2_0': float, 'D2_1': float, 'D2_2': float, 'D2_3': float, 'D2_4': float, 'D2_5': float, 'D2_6': float, 'D2_7': float, 'D2_8': float, 'D2_9': float,
+                'D3_0': float, 'D3_1': float, 'D3_2': float, 'D3_3': float, 'D3_4': float, 'D3_5': float, 'D3_6': float, 'D3_7': float, 'D3_8': float, 'D3_9': float,
+                'D4_0': float, 'D4_1': float, 'D4_2': float, 'D4_3': float, 'D4_4': float, 'D4_5': float, 'D4_6': float, 'D4_7': float, 'D4_8': float, 'D4_9': float}
+
+    from tqdm import tqdm
+
+    for file in tqdm(os.listdir(root)):
+        mesh = trimesh.load(root + file)
+
+        for i, value in zip(range(len(calculate_a3(mesh))), calculate_a3(mesh)):
+            hist_features[f'A3_{i}'] = value
+
+        for i, value in zip(range(len(calculate_d1(mesh))), calculate_d1(mesh)):
+            hist_features[f'D1_{i}'] = value
+
+        for i, value in zip(range(len(calculate_d2(mesh))), calculate_d2(mesh)):
+            hist_features[f'D2_{i}'] = value
+
+        for i, value in zip(range(len(calculate_d3(mesh))), calculate_d3(mesh)):
+            hist_features[f'D3_{i}'] = value
+
+        for i, value in zip(range(len(calculate_d4(mesh))), calculate_d4(mesh)):
+            hist_features[f'D4_{i}'] = value
+
+        # features['A3'].append(calculate_a3(mesh))
+        # features['D1'].append(calculate_d1(mesh))
+        # features['D2'].append(calculate_d2(mesh))
+        # features['D3'].append(calculate_d3(mesh))
+        # features['D4'].append(calculate_d4(mesh))
+
+        # print(f"processed {file}")
+
+    # construct df holding feat values
+    # hist_features_matrix = pd.DataFrame.from_dict(hist_features)
+    hist_features_matrix = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in hist_features.items()]))
+
+    # export to csv
+    if to_csv:
+        hist_features_matrix.to_csv('./features/hist_features.csv')
+
+    return hist_features_matrix
+
+extract_hist_features("./normalized-psb-db/", to_csv=True)
 
 
-'''SIMPLE 3D GLOBAL DESCRIPTORS'''
-area = mesh.area
-# volume below makes sense only if:
-    # if all triangles on mesh are consistently oriented
-    # meshes has no holes = is watertight
-volume = mesh.volume
-aabb_volume = mesh.bounding_box_oriented.volume
-compactness = pow(area, 3) / pow(volume, 2)
-diameter = get_diameter(mesh)
+# checking feature extraction by picking some very different samples and showing that feat values are also very different
 
 
-print("Computed simple descriptors")
 
 
-# Distributions of descriptors:
-a3 = calculate_a3(mesh)
-d1 = calculate_d1(mesh)
-d2 = calculate_d2(mesh)
-d3 = calculate_d3(mesh)
-d4 = calculate_d4(mesh)
-
-plot_hist(d4)
-
-# features_matrix = extract_features(root='./reduced-normalized-psb-db/', to_csv=True)
-# features_matrix.head()
-
-# features_matrix = pd.read_csv("./features/features.csv")
-
-# dist_heatmap(features_matrix)
