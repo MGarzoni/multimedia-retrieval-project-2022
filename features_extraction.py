@@ -42,20 +42,10 @@ BINS = 10
 
 random.seed(42)
 
-
 # load sample mesh
 test_mesh = "./psb-labeled-db/Armadillo/284.off"
 mesh = trimesh.load(test_mesh)
-<<<<<<< Updated upstream
 print("# vertices before open3d decimation:", len(mesh.vertices))
-=======
-
-# below try to check for mesh to be watertight and try to fix it
-mesh.show()
-if not mesh.is_watertight:
-    mesh.repair.fill_holes()
->>>>>>> Stashed changes
-mesh.show()
 
 # mesh_to_decimate = open3d.io.read_triangle_mesh(test_mesh)
 # mesh_to_decimate = mesh_to_decimate.simplify_quadric_decimation(17500)
@@ -246,14 +236,7 @@ def extract_features(root, to_csv=False):
     for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)
         features['area'].append(mesh.area)
-<<<<<<< Updated upstream
         features['volume'].append(mesh.volume) # no need to check if mesh has holes cause already checked that no mesh does
-=======
-
-        # add a temp mesh that we stitch before volume
-        stitched_mesh = mesh.repair.fill_holes()
-        features['volume'].append(stitched_mesh.volume)
->>>>>>> Stashed changes
         features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
         features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
         features['diameter'].append(get_diameter(mesh))
