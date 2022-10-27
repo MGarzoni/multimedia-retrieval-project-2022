@@ -29,7 +29,7 @@ import random
 import numpy as np
 import os
 import pandas as pd
-from math import dist
+from math import dist, hypot, sqrt
 import seaborn as sns
 import random
 from matplotlib import pyplot as plt
@@ -136,7 +136,8 @@ def calculate_d2(mesh):
     Range is set to 0, 1.5 as a greater distance is not possible due to unit cube normalization'''
     
     # generatre N pairs (could be repeats)
-    pairs = [random.sample(list(mesh.vertices), 2) for i in range(SAMPLE_N)]
+    vertices = list(mesh.vertices)
+    pairs = [random.sample(vertices, 2) for i in range(SAMPLE_N)]
 
     # get distance between each pair of vertices
     distances = [float(np.sqrt(np.sum(np.square(pair[1]-pair[0]))))
@@ -148,33 +149,48 @@ def calculate_d2(mesh):
 d2 = calculate_d2(mesh)
 
 def calculate_d3(mesh):
-    '''given a mesh, return the square root of areas of triangles calculated by each 3 vertices'''
+    '''given a mesh, return the square roots of areas of SAMPLE_N triangles
+    chosen by random trios of three vertices
+    Area of a triangle made inside a unit cube can be no more than half the max
+    Cross-section area, so no more than 0.7. Square root of that is no more than 0.85'''
+    
+    vertices = list(mesh.vertices)
 
-    results = []
-    for vertex in mesh.vertices:
+    # generatre N trios of vertices (could be repeats)
+    trios = [random.sample(vertices, 3) for i in range(SAMPLE_N)]
 
-        # get a, b, c as the elements of the vertices list
-        a, b, c = vertex[0], vertex[1], vertex[2]
+    sqr_areas = []
 
-        # calculate the semi-perimeter
-        s = (a + b + c) / 2
+    for trio in trios:
 
-        # calculate the area
-        area = (s*(s-a)*(s-b)*(s-c)) ** 0.5
-        result = float(np.sqrt(area))
-        results.append(result)
+        # three points
+        p1, p2, p3 = trio
+        
+        # create two vectors defining the triangle
+        a = p2- p1
+        b = p3 - p1
+                
+        # calculate cross product to get area
+        cross_pr = np.cross(a, b)
+        
+        # magnitude of cross product / 2 = triangle area
+        area = 0.5 * hypot(cross_pr[0], cross_pr[1], cross_pr[2])
+        
+        # square root of area added to results
+        sqr_areas.append(sqrt(area))
 
-    return results
+    return density_histogram(sqr_areas, range=(0, 0.85))
+
 d3 = calculate_d3(mesh)
 
 def calculate_d4(mesh):
-    '''given a mesh, return the cube root of volume of tetrahedron formed by 4 random vertices'''
+    '''given a mesh, return the cube roots of volume of 
+    SAMPLE_N tetrahedrons formed by 4 random vertices'''
 
-    mesh_vertices = mesh.vertices
-    v1 = random.choice(mesh_vertices)
-    v2 = random.choice(mesh_vertices)
-    v3 = random.choice(mesh_vertices)
-    v4 = random.choice(mesh_vertices)
+    vertices = mesh.vertices
+    quartets = [random.sample(vertices, 4) for i in range(SAMPLE_N)]
+    
+    
 
     pass # to complete
 
