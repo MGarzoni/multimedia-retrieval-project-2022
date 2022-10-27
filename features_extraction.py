@@ -262,7 +262,7 @@ def extract_features(root, to_csv=False):
         features['D1'].append(calculate_d1(mesh))
         features['D2'].append(calculate_d2(mesh))
         features['D3'].append(calculate_d3(mesh))
-        # features['D4'].append(calculate_d4(mesh))
+        features['D4'].append(calculate_d4(mesh))
 
         print(f"processed {file}")
 
