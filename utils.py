@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from math import sqrt
 from ast import literal_eval
+from collections import defaultdict
 
 # corners of image, array used for visually consistent png export of meshes
 CORNERS = [[-0.75, -0.75, -0.75],
@@ -249,7 +250,6 @@ def before_after_hist(original_csv, norm_csv, attributes):
         plt.title(f"{attribute} before and after normalization pipeline")
         plt.legend()
         plt.show()
-        
     
 def update_csv(db_path, csv_path, flat_dir = False):
     """Given a database path, iterate through all shapes in the database and extract attributes into dictionary.
@@ -282,3 +282,13 @@ def update_csv(db_path, csv_path, flat_dir = False):
     # write dictionary to csv
     output = pd.DataFrame.from_dict(attributes_dict, orient='index')
     output.to_csv(csv_path)
+
+def filename_to_class(attributes_df):
+    """Return dict mapping filename to class/category in a given attributes dataframe"""
+    file2class = {}
+    class2files= defaultdict(list)
+    for index, row in attributes_df.iterrows():
+        file2class[row["filename"]] = row["category"]
+        class2files[row['category']].append(row["filename"])
+    return file2class, class2files
+        

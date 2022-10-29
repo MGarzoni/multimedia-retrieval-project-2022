@@ -15,6 +15,12 @@ from collections import defaultdict
 test_mesh = "./psb-labeled-db/Armadillo/284.off"
 mesh = trimesh.load(test_mesh)
 
+# define which database we are extracting features from here
+NORM_PATH = "./reduced-normalized-psb-db/"
+attributes_df = pd.read_csv("./attributes/reduced-normalized-PSB-attributes.csv")
+file2class, class2files = filename_to_class(attributes_df) # create dicts mapping filenames to categories
+
+
 # code below to check if any shape has holes
 # root = "./normalized-psb-db/"
 # for mesh in os.listdir(root):
@@ -187,17 +193,26 @@ def calculate_d4(mesh):
     return density_histogram(results, range = (0, 1))
 
 '''FEATURE EXTRACTION'''
+
+# this dict stores the feature names and corresponding calculation methods
+feature_methods = {"a3":calculate_a3, 
+                   "d1":calculate_d1, 
+                   "d2":calculate_d2,
+                   "d3":calculate_d3, 
+                   "d4":calculate_d4}
+
 def extract_scalar_features(root, to_csv=False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
     and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
     # initialize dictionary holding feature values
-    scalar_features = {'area': [], 'volume': [], 'aabb_volume': [], 'compactness': [], 'diameter': [], 'eccentricity': []}
+    scalar_features = defaultdict(list)
 
     from tqdm import tqdm
 
     for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)
+        scalar_features['filename'].append(file)
         scalar_features['area'].append(mesh.area)
         scalar_features['volume'].append(mesh.volume) # no need to check if mesh has holes cause already checked that no mesh does
         scalar_features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
@@ -224,9 +239,6 @@ def extract_hist_features(root, to_csv=False):
     from tqdm import tqdm
     
     
-    # this dict stores the feature names and corresponding calculation methods
-    feature_methods = {"a3":calculate_a3, "d1":calculate_d1, "d2":calculate_d2,
-                       "d3":calculate_d3, "d4":calculate_d4}
     
     # this dict will hold the feature histograms, bin by bin
     hist_bins = defaultdict(list)
@@ -237,11 +249,13 @@ def extract_hist_features(root, to_csv=False):
 
         # append only the VALUES of the histogram, not the bins
         # (these are assumed to be consistent)
+    
         
         # calcualte the histograms for each feature using the corresponding method from the dict
         feature_hists = {feature:method_name(mesh)[0] for feature, method_name in feature_methods.items()}
         
         #  now save these entries in the hist_bins dictionary
+        hist_bins['filename'].append(file)
         for feature in feature_methods.keys():
             for i in range(BINS):
                 hist_bins[f"{feature}_{i}"].append(feature_hists[feature][i])
@@ -258,12 +272,33 @@ def extract_hist_features(root, to_csv=False):
 
     return hist_features_matrix
 
+'''FEATURE EXTRACTION'''
+def categories_visualize(hist_df):
+    
+    feature_names = feature_methods.keys()
+    for bin_index in range(BINS):
+        pass
+    
+    # histogram holding classes, files, and each files histograms
+    class_file_histograms = defaultdict(defaultdict(defaultdict))
+    
+    # to do:
+    # load histograms in
+    # create another dictionary in this py file that holds the bins for all these histograms
+    # use those bins to graph the histograms, one graph per class
+    # then put the graphs in a nice grid
+        
+        
+        
+    
 
-# extract_scalar_features("./reduced-normalized-psb-db/", to_csv=True)
-extract_hist_features("./reduced-normalized-psb-db/", to_csv=True)
+
+# extract_scalar_features(NORM_PATH, to_csv=True)
+extract_hist_features(NORM_PATH, to_csv=True)
 
 
 # checking feature extraction by picking some very different samples and showing that feat values are also very different
-
-
+scalar_df = pd.read_csv("./features/scalar_features.csv")
 hist_df = pd.read_csv('./features/hist_features.csv')
+
+categories_visualize(hist_df)
