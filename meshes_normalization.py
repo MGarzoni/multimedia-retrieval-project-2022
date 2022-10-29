@@ -88,7 +88,8 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
                     # print(f"os.path.join(out_dir, filename) --> {os.path.join(out_dir, filename)}")
     
                     # this one below should be tweaked to create a folder for each mesh before saving, and then save it an the correct category folder
-                    with open(os.path.join(out_dir, filename), 'w+') as fp:
+                    os.makedirs(os.path.join(out_dir, category), exist_ok=True)
+                    with open(os.path.join(out_dir, category, filename), 'w+') as fp:
                         fp.write(off_file)
     
                     # call function to extract attributes and add them to output_dictionary
