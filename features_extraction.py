@@ -8,6 +8,8 @@ import math
 import seaborn as sns
 import random
 from matplotlib import pyplot as plt
+from utils import *
+from collections import defaultdict
 
 # load sample mesh
 test_mesh = "./psb-labeled-db/Armadillo/284.off"
@@ -214,50 +216,41 @@ def extract_scalar_features(root, to_csv=False):
 
     return scalar_features_matrix
 
-extract_scalar_features("./normalized-psb-db/", to_csv=True)
 
 def extract_hist_features(root, to_csv=False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
     and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
-    # initialize dictionary holding feature values
-    hist_features = {'A3_0': float, 'A3_1': float, 'A3_2': float, 'A3_3': float, 'A3_4': float, 'A3_5': float, 'A3_6': float, 'A3_7': float, 'A3_8': float, 'A3_9': float,
-                'D1_0': float, 'D1_1': float, 'D1_2': float, 'D1_3': float, 'D1_4': float, 'D1_5': float, 'D1_6': float, 'D1_7': float, 'D1_8': float, 'D1_9': float,
-                'D2_0': float, 'D2_1': float, 'D2_2': float, 'D2_3': float, 'D2_4': float, 'D2_5': float, 'D2_6': float, 'D2_7': float, 'D2_8': float, 'D2_9': float,
-                'D3_0': float, 'D3_1': float, 'D3_2': float, 'D3_3': float, 'D3_4': float, 'D3_5': float, 'D3_6': float, 'D3_7': float, 'D3_8': float, 'D3_9': float,
-                'D4_0': float, 'D4_1': float, 'D4_2': float, 'D4_3': float, 'D4_4': float, 'D4_5': float, 'D4_6': float, 'D4_7': float, 'D4_8': float, 'D4_9': float}
-
     from tqdm import tqdm
+    
+    
+    # this dict stores the feature names and corresponding calculation methods
+    feature_methods = {"a3":calculate_a3, "d1":calculate_d1, "d2":calculate_d2,
+                       "d3":calculate_d3, "d4":calculate_d4}
+    
+    # this dict will hold the feature histograms, bin by bin
+    hist_bins = defaultdict(list)
+
 
     for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)
 
-        for i, value in zip(range(len(calculate_a3(mesh))), calculate_a3(mesh)):
-            hist_features[f'A3_{i}'] = value
+        # append only the VALUES of the histogram, not the bins
+        # (these are assumed to be consistent)
+        
+        # calcualte the histograms for each feature using the corresponding method from the dict
+        feature_hists = {feature:method_name(mesh)[0] for feature, method_name in feature_methods.items()}
+        
+        #  now save these entries in the hist_bins dictionary
+        for feature in feature_methods.keys():
+            for i in range(BINS):
+                hist_bins[f"{feature}_{i}"].append(feature_hists[feature][i])
 
-        for i, value in zip(range(len(calculate_d1(mesh))), calculate_d1(mesh)):
-            hist_features[f'D1_{i}'] = value
-
-        for i, value in zip(range(len(calculate_d2(mesh))), calculate_d2(mesh)):
-            hist_features[f'D2_{i}'] = value
-
-        for i, value in zip(range(len(calculate_d3(mesh))), calculate_d3(mesh)):
-            hist_features[f'D3_{i}'] = value
-
-        for i, value in zip(range(len(calculate_d4(mesh))), calculate_d4(mesh)):
-            hist_features[f'D4_{i}'] = value
-
-        # features['A3'].append(calculate_a3(mesh))
-        # features['D1'].append(calculate_d1(mesh))
-        # features['D2'].append(calculate_d2(mesh))
-        # features['D3'].append(calculate_d3(mesh))
-        # features['D4'].append(calculate_d4(mesh))
-
-        # print(f"processed {file}")
-
+        print(f"processed {file}")
+        
     # construct df holding feat values
-    # hist_features_matrix = pd.DataFrame.from_dict(hist_features)
-    hist_features_matrix = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in hist_features.items()]))
+    hist_features_matrix = pd.DataFrame.from_dict(hist_bins)
+    # hist_features_matrix = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in hist_features.items()]))
 
     # export to csv
     if to_csv:
@@ -265,11 +258,12 @@ def extract_hist_features(root, to_csv=False):
 
     return hist_features_matrix
 
-extract_hist_features("./normalized-psb-db/", to_csv=True)
+
+# extract_scalar_features("./reduced-normalized-psb-db/", to_csv=True)
+extract_hist_features("./reduced-normalized-psb-db/", to_csv=True)
 
 
 # checking feature extraction by picking some very different samples and showing that feat values are also very different
 
 
-
-
+hist_df = pd.read_csv('./features/hist_features.csv')
