@@ -6,6 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 from math import sqrt
+from ast import literal_eval
 
 # corners of image, array used for visually consistent png export of meshes
 CORNERS = [[-0.75, -0.75, -0.75],
@@ -248,6 +249,7 @@ def before_after_hist(original_csv, norm_csv, attributes):
         plt.title(f"{attribute} before and after normalization pipeline")
         plt.legend()
         plt.show()
+        
     
 def update_csv(db_path, csv_path, flat_dir = False):
     """Given a database path, iterate through all shapes in the database and extract attributes into dictionary.
