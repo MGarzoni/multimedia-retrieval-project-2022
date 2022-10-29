@@ -39,8 +39,11 @@ for category in categories:
     
 for path in paths_to_keep:
     filename = os.path.basename(path)
+    category = os.path.basename(os.path.dirname(path))
+
+    os.makedirs(new_folder_path+category, exist_ok=True)
     
-    shutil.copyfile(path, new_folder_path+filename)
+    shutil.copyfile(path, new_folder_path+category+"/"+filename)
     new_paths.append(new_folder_path+filename)
     
 new_attributes_df = original_df[original_df["path"].isin(paths_to_keep)]
