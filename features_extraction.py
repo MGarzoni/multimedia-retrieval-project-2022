@@ -213,6 +213,7 @@ def extract_scalar_features(root, to_csv=False):
     for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)
         scalar_features['filename'].append(file)
+        scalar_features['category'].append(file2class[file])
         scalar_features['area'].append(mesh.area)
         scalar_features['volume'].append(mesh.volume) # no need to check if mesh has holes cause already checked that no mesh does
         scalar_features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
@@ -256,6 +257,7 @@ def extract_hist_features(root, to_csv=False):
         
         #  now save these entries in the hist_bins dictionary
         hist_bins['filename'].append(file)
+        hist_bins['category'].append(file2class[file])
         for feature in feature_methods.keys():
             for i in range(BINS):
                 hist_bins[f"{feature}_{i}"].append(feature_hists[feature][i])
@@ -280,7 +282,7 @@ def categories_visualize(hist_df):
         pass
     
     # histogram holding classes, files, and each files histograms
-    class_file_histograms = defaultdict(defaultdict(defaultdict))
+    # class_file_histograms = defaultdict(defaultdict(defaultdict()))
     
     # to do:
     # load histograms in
@@ -293,7 +295,7 @@ def categories_visualize(hist_df):
     
 
 
-# extract_scalar_features(NORM_PATH, to_csv=True)
+extract_scalar_features(NORM_PATH, to_csv=True)
 extract_hist_features(NORM_PATH, to_csv=True)
 
 
