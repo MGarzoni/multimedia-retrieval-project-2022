@@ -294,7 +294,7 @@ def extract_hist_features(root, to_csv=False):
 def standardize_column(column):
     """Take an iterable and standardize it"""
     mean = np.mean(column)
-    deviation = 4*np.std(column) #if within four standard deviations, it should still be in range
+    deviation = 4*np.std(column) #if within two standard deviations, it should still be in range
     newcolumn = []
     for element in column:
         newcolumn.append(0.5 + (mean-element)/deviation)
