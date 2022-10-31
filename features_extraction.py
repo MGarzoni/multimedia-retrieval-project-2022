@@ -46,12 +46,21 @@ def get_diameter(mesh):
 
     convex_hull = mesh.convex_hull
     max_dist = 0
+    vertices = list(convex_hull.vertices)
+    
+    
+    
+    """THIS CODE IS NOT THE RIGHT APPROACH JUST FASTER BY SAMPLING 100 POINTS"""
+    
+    if len(vertices) > 100:
+        vertices = random.sample(vertices, 100)
 
-    for v1, v2 in zip(convex_hull.vertices, convex_hull.vertices):
-        if (v1 != v2).any():
-            dist = np.linalg.norm(v1 - v2)
-            if dist > max_dist:
-                max_dist = dist
+    for v1 in vertices:
+        for v2 in vertices:
+            if (v1!=v2).all():
+                dist = np.linalg.norm(v1 - v2)
+                if dist > max_dist:
+                    max_dist = dist
 
     return max_dist
 diameter = get_diameter(mesh)
@@ -204,7 +213,7 @@ feature_methods = {"a3":calculate_a3,
                    "d3":calculate_d3, 
                    "d4":calculate_d4}
 
-def extract_scalar_features(root, to_csv=False):
+def extract_scalar_features(root, to_csv=False, standardize = False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
     and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
@@ -228,6 +237,11 @@ def extract_scalar_features(root, to_csv=False):
 
     # construct df holding feat values
     scalar_features_matrix = pd.DataFrame.from_dict(scalar_features)
+    if standardize:
+        features_to_standardize = ["area", "volume", "aabb_volume", 
+                        "compactness", "diameter", "eccentricity"]
+        for feature in features_to_standardize:
+            scalar_features_matrix[feature] = standardize_column(scalar_features_matrix[feature])
 
     # export to csv
     if to_csv:
@@ -277,6 +291,17 @@ def extract_hist_features(root, to_csv=False):
 
     return hist_features_matrix
 
+def standardize_column(column):
+    """Take an iterable and standardize it"""
+    mean = np.mean(column)
+    deviation = 4*np.std(column) #if within four standard deviations, it should still be in range
+    newcolumn = []
+    for element in column:
+        newcolumn.append(0.5 + (mean-element)/deviation)
+    
+    return newcolumn
+    
+
 '''FEATURE EXTRACTION'''
 def categories_visualize(hist_df):
     
@@ -298,8 +323,8 @@ def categories_visualize(hist_df):
     
 
 
-scalar_matrix = extract_scalar_features(NORM_PATH, to_csv=True)
-extract_hist_features(NORM_PATH, to_csv=True)
+scalar_matrix = extract_scalar_features(NORM_PATH, to_csv=True, standardize = True)
+# extract_hist_features(NORM_PATH, to_csv=True)
 
 
 # checking feature extraction by picking some very different samples and showing that feat values are also very different
@@ -307,3 +332,4 @@ scalar_df = pd.read_csv("./features/scalar_features.csv")
 hist_df = pd.read_csv('./features/hist_features.csv')
 
 categories_visualize(hist_df)
+
