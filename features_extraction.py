@@ -72,12 +72,15 @@ SAMPLE_N = 2000 # nr random samples taken for each distributional feature
 BINS = 10
 random.seed(42)
 
-def density_histogram(values, range = None):
-    """Integrates to 1, BINS nr of bins"""
-    return np.histogram(values, range = range, bins = BINS, density = True)
+def normalized_histogram_no_bins(values, range = None):
+    """Sums to 1, BINS nr of bins, range given by range
+    Histogram returned WITHOUT info about bins"""
+    hist = np.histogram(values, range = range, bins = BINS)
+    
+    return hist[0]/np.sum(hist[0])
 
 def plot_hist(histogram):
-    """Take as input the output of density_histogram"""
+    """Take as input the output of normalized_histogram"""
     hist, bins = histogram
     plt.step(bins[:-1], hist)
 
@@ -106,7 +109,7 @@ def calculate_a3(mesh):
                 
         results.append(angle)
 
-    return density_histogram(results, range=(0, math.pi))
+    return normalized_histogram_no_bins(results, range=(0, math.pi))
 
 def calculate_d1(mesh):
     '''given a mesh, return density histogrma of distances between barycenter and SAMPLE_N vertices
@@ -125,7 +128,7 @@ def calculate_d1(mesh):
         result = float(np.sqrt(np.sum(np.square(vertex - center))))
         results.append(result)
     
-    return density_histogram(results, range = (0, 1.5))
+    return normalized_histogram_no_bins(results, range = (0, 1.5))
 
 def calculate_d2(mesh):
     '''given a mesh, return hist of distances between SAMPLE_N pairs of vertices
@@ -141,7 +144,7 @@ def calculate_d2(mesh):
                for pair in pairs]
     
     
-    return density_histogram(distances, range = (0, 1.5))
+    return normalized_histogram_no_bins(distances, range = (0, 1.5))
 
 def calculate_d3(mesh):
     '''given a mesh, return the square roots of areas of SAMPLE_N triangles
@@ -174,7 +177,7 @@ def calculate_d3(mesh):
         # square root of area added to results
         sqr_areas.append(sqrt(area))
 
-    return density_histogram(sqr_areas, range=(0, 0.85))
+    return normalized_histogram_no_bins(sqr_areas, range=(0, 0.85))
 
 def calculate_d4(mesh):
     '''given a mesh, return the cube roots of volume of 
@@ -190,7 +193,7 @@ def calculate_d4(mesh):
         volume = (1/6) * abs(np.linalg.det((p1-p4, p2-p4, p3-p4))) # formula from Wikipedia
         results.append(np.cbrt(volume)) # add cubic root of volume to results
     
-    return density_histogram(results, range = (0, 1))
+    return normalized_histogram_no_bins(results, range = (0, 1))
 
 '''FEATURE EXTRACTION'''
 
@@ -253,7 +256,7 @@ def extract_hist_features(root, to_csv=False):
     
         
         # calcualte the histograms for each feature using the corresponding method from the dict
-        feature_hists = {feature:method_name(mesh)[0] for feature, method_name in feature_methods.items()}
+        feature_hists = {feature:method_name(mesh) for feature, method_name in feature_methods.items()}
         
         #  now save these entries in the hist_bins dictionary
         hist_bins['filename'].append(file)
@@ -295,7 +298,7 @@ def categories_visualize(hist_df):
     
 
 
-extract_scalar_features(NORM_PATH, to_csv=True)
+scalar_matrix = extract_scalar_features(NORM_PATH, to_csv=True)
 extract_hist_features(NORM_PATH, to_csv=True)
 
 
