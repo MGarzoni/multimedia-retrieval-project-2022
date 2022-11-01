@@ -10,6 +10,7 @@ import random
 from matplotlib import pyplot as plt
 from utils import *
 from collections import defaultdict
+from tqdm import tqdm
 
 # load sample mesh
 test_mesh = "./psb-labeled-db/Armadillo/284.off"
@@ -40,7 +41,7 @@ volume = mesh.volume
 aabb_volume = mesh.bounding_box_oriented.volume
 compactness = pow(area, 3) / pow(volume, 2)
 
-def get_diameter(mesh):
+def get_diameter(mesh, method="fast"):
     '''given a mesh, get the furthest points on the convex haul and then try all possible combinations
     of the distances between points and return the max one'''
 
@@ -49,18 +50,22 @@ def get_diameter(mesh):
     vertices = list(convex_hull.vertices)
     
     
+    if method == "fast": # if fast method, REDUCE nr vertices
+        """THIS CODE IS NOT THE RIGHT APPROACH JUST FASTER BY SAMPLING 100 POINTS"""
+        
+        if len(vertices) > 100:
+            vertices = random.sample(vertices, 100)
+            
+    if method == "slow":
+        pass
+        
+    for i in range(len(vertices)):
+        for j in range(i, len(vertices)):
+            dist = np.linalg.norm(vertices[i] - vertices[j])
+            if dist > max_dist:
+                max_dist = dist
     
-    """THIS CODE IS NOT THE RIGHT APPROACH JUST FASTER BY SAMPLING 100 POINTS"""
-    
-    if len(vertices) > 100:
-        vertices = random.sample(vertices, 100)
-
-    for v1 in vertices:
-        for v2 in vertices:
-            if (v1!=v2).all():
-                dist = np.linalg.norm(v1 - v2)
-                if dist > max_dist:
-                    max_dist = dist
+        
 
     return max_dist
 diameter = get_diameter(mesh)
@@ -122,7 +127,7 @@ def calculate_a3(mesh):
 
 def calculate_d1(mesh):
     '''given a mesh, return density histogrma of distances between barycenter and SAMPLE_N vertices
-    Due to scaling ot unit cube distances will not be greater than 1.5'''
+    Due to scaling ot unit cube distances will not be greater than 1.73 (diagonal of unit cube)'''
 
     results = []
     
@@ -137,11 +142,11 @@ def calculate_d1(mesh):
         result = float(np.sqrt(np.sum(np.square(vertex - center))))
         results.append(result)
     
-    return normalized_histogram_no_bins(results, range = (0, 1.5))
+    return normalized_histogram_no_bins(results, range = (0, 1.73))
 
 def calculate_d2(mesh):
     '''given a mesh, return hist of distances between SAMPLE_N pairs of vertices
-     Range is set to 0, 1.5 as a greater distance is not possible due to unit cube normalization'''
+     Range is set to 0, 1.73 as a greater distance is not possible due to unit cube normalization'''
 
     vertices = list(mesh.vertices)
 
@@ -153,7 +158,7 @@ def calculate_d2(mesh):
                for pair in pairs]
     
     
-    return normalized_histogram_no_bins(distances, range = (0, 1.5))
+    return normalized_histogram_no_bins(distances, range = (0, 1.73))
 
 def calculate_d3(mesh):
     '''given a mesh, return the square roots of areas of SAMPLE_N triangles
@@ -220,7 +225,7 @@ def extract_scalar_features(root, to_csv=False, standardize = False):
     # initialize dictionary holding feature values
     scalar_features = defaultdict(list)
 
-    from tqdm import tqdm
+    
 
     for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)
@@ -354,4 +359,18 @@ scalar_df = pd.read_csv("./features/scalar_features.csv")
 hist_df = pd.read_csv('./features/hist_features.csv')
 
 categories_visualize(hist_df)
+
+# testing diameter, fast vs. slow
+errors = []
+nvert = []
+for file in tqdm(os.listdir(NORM_PATH)):
+    mesh = trimesh.load(NORM_PATH + file)
+    fast_diam = get_diameter(mesh, method = "fast")
+    slow_diam = get_diameter(mesh, method = "slow")
+    error = (fast_diam-slow_diam)/slow_diam
+    print("Fast dimeter:", fast_diam, "Slow diameter:", slow_diam,
+          "Error fraction:", error, "#vertices", len(mesh.vertices))
+    errors.append(error)
+    nvert.append(len(mesh.vertices))
+plt.plot(nvert, errors)
 
