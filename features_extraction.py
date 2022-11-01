@@ -340,18 +340,18 @@ def categories_visualize(hist_df):
     # use those bins to graph the histograms, one graph per class
     # then put the graphs in a nice grid
         
-        
-        
-    
-
-
 scalar_matrix = extract_scalar_features(NORM_PATH, to_csv=True, standardize = True)
 # extract_hist_features(NORM_PATH, to_csv=True)
-
 
 # checking feature extraction by picking some very different samples and showing that feat values are also very different
 scalar_df = pd.read_csv("./features/scalar_features.csv")
 hist_df = pd.read_csv('./features/hist_features.csv')
 
-categories_visualize(hist_df)
+eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
+eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+non_eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
+non_eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+
+eccentric_example_0.plot(title='Airplane 0', kind='bar')
+non_eccentric_example_0.plot(title='Cup 0', kind='bar')
 
