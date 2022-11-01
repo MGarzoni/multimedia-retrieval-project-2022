@@ -42,24 +42,24 @@
 #     poor matching.)
 # """
 
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
-import numpy as np
-import matplotlib.pyplot as plt
+# import pandas as pd
+# from sklearn.preprocessing import StandardScaler
+# import numpy as np
+# import matplotlib.pyplot as plt
 
-# get features csv
-features_matrix = pd.read_csv("./features/features.csv")
-features_matrix.head()
+# # get features csv
+# features_matrix = pd.read_csv("./features/features.csv")
+# features_matrix.head()
 
-# divide feature types so we can apply different normalizations to each
-scalar_features = features_matrix[['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']]
-hist_features = features_matrix[['A3', 'D1', 'D2', 'D3', 'D4']]
+# # divide feature types so we can apply different normalizations to each
+# scalar_features = features_matrix[['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']]
+# hist_features = features_matrix[['A3', 'D1', 'D2', 'D3', 'D4']]
 
-# apply sclar standardization to scalar features
-scaled_scalar_features = StandardScaler().fit_transform(scalar_features)
+# # apply sclar standardization to scalar features
+# scaled_scalar_features = StandardScaler().fit_transform(scalar_features)
 
-# normalize hist feats
+# # normalize hist feats
 
 
-# create new cvs with normalized feats
+# # create new cvs with normalized feats
 
