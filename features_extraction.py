@@ -238,14 +238,21 @@ def extract_scalar_features(root, to_csv=False, standardize = False):
     # construct df holding feat values
     scalar_features_matrix = pd.DataFrame.from_dict(scalar_features)
     if standardize:
+        standardization_dict = {"feature":[], "mean":[], "deviation":[]}
         features_to_standardize = ["area", "volume", "aabb_volume", 
                         "compactness", "diameter", "eccentricity"]
         for feature in features_to_standardize:
-            scalar_features_matrix[feature] = standardize_column(scalar_features_matrix[feature])
+            scalar_features_matrix[feature], mean, deviation = standardize_column(scalar_features_matrix[feature])
+            standardization_dict["feature"].append(feature)
+            standardization_dict["mean"].append(mean)
+            standardization_dict["deviation"].append(deviation)
+            
 
-    # export to csv
+    # export to csv (standardization parameters too)
     if to_csv:
         scalar_features_matrix.to_csv('./features/scalar_features.csv')
+        if standardize:
+            pd.DataFrame.from_dict(standardization_dict).to_csv('./features/standardization_parameters.csv')
 
     return scalar_features_matrix
 
@@ -291,16 +298,30 @@ def extract_hist_features(root, to_csv=False):
 
     return hist_features_matrix
 
-def standardize_column(column):
-    """Take an iterable and standardize it"""
-    mean = np.mean(column)
-    deviation = 4*np.std(column) #if within two standard deviations, it should still be in range
+def standardize_column(column, mean=None, deviation=None):
+    """Take an iterable and standardize it (with given deviations if given)"""
+    
+    if mean == None or deviation == None: # calculate standardization parameters if not given
+        mean = np.mean(column)
+        deviation = 7*np.std(column) #distance from 0 to 1 should be 7 standard deviations
+    
     newcolumn = []
-    for element in column:
-        newcolumn.append(0.5 + (mean-element)/deviation)
+    for value in column:
+        newcolumn.append(standardize_value(value, mean, deviation, verbose = True))
     
-    return newcolumn
+    return newcolumn, mean, deviation
     
+
+def standardize_value(value, mean, deviation, verbose = False):
+    """Standardize a single vanue given a mean and deviation (not necessarily same as std)
+    CENTERED at 0.5 and most values will be within [0,1]"""
+    standardized = (0.5 + (value-mean)/deviation)
+    
+    if verbose:
+        if standardized<0:
+            print(f"Value: {value}, Mean: {mean}, Deviation{deviation}, Standardized: {standardized}")
+    
+    return standardized
 
 '''FEATURE EXTRACTION'''
 def categories_visualize(hist_df):
