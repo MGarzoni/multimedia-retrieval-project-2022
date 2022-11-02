@@ -34,7 +34,7 @@ def dist_heatmap(features_matrix, title=None):
 
 # get a random row as query shape's features
 query_scalar_vec = scalar_df.sample().drop(['Unnamed: 0', 'filename', 'category'], axis='columns')
-
+qsv_idx = query_scalar_vec.index
 # get rest of feature vectors without the one selected above
 rest_of_scalar_vecs = scalar_df.drop(scalar_df.index[query_scalar_vec.index]).drop(['Unnamed: 0', 'filename', 'category'], axis='columns')
 
@@ -49,40 +49,72 @@ def euclidean_distance(query_vec, target_vec):
     target_vec = np.array(target_vec)
     res = np.sum((query_vec - target_vec) ** 2)
     distance = np.sqrt(res)
+
     return distance
 
 # compute distances of query shape to the rest of shapes
-distances = []
+scalar_distances = []
 for i in range(len(rest_of_scalar_vecs)):
 
     # check that index is not the one we dropped
-    if i != query_scalar_vec.index:
-        target_vec = rest_of_scalar_vecs.loc[i]
-        dist = euclidean_distance(query_scalar_vec, target_vec)
-        distances.append(dist)
+    if i != qsv_idx:
+        target_scalar_vec = rest_of_scalar_vecs.loc[i]
+        dist = round(euclidean_distance(query_scalar_vec, target_scalar_vec), 3)
+        scalar_distances.append(dist)
     else:
         continue
 
+print("=== EUCLIDEAN DISTANCES BETWEEN QUERY SCALAR FEAT VEC AND REST OF DB SCALAR FEAT VECS ===\n")
+
 # sort distances from high to low
-sorted_distances = sorted(distances, reverse=True)
+sorted_scalar_distances = sorted(scalar_distances, reverse=True)
 
 # get k=5 best-matching shapes
-k_best_matches = sorted_distances[:5]
-print(f"These are the k=5 best matches:\n{k_best_matches}")
+k_best_matches = sorted_scalar_distances[:5]
+print(f"These are the k=5 best matches:\n{k_best_matches}\n")
 
 # get best-matching shapes based on t=0.7 distance treshold
-t_best_matches = [dist for dist in distances if dist >= 0.7]
-print(f"These are the t=0.7 best matches:\n{t_best_matches}")
+t_best_matches = [dist for dist in scalar_distances if dist >= 0.7]
+print(f"These are the t=0.7 best matches:\n{t_best_matches}\n")
 
 
 """BELOW HERE ONLY FOR HISTOGRAM FEATURES"""
 # get a random row as query shape's features
 query_hist_vec = hist_df.sample().drop(['Unnamed: 0', 'filename', 'category'], axis='columns')
-print(query_hist_vec)
+qhv_idx = query_hist_vec.index
+# print(query_hist_vec)
 
 # get rest of feature vectors without the one selected above
 rest_of_hist_vecs = hist_df.drop(hist_df.index[query_hist_vec.index]).drop(['Unnamed: 0', 'filename', 'category'], axis='columns')
-print(rest_of_hist_vecs.head(37))
+# print(rest_of_hist_vecs.head(37))
 
-def earth_movers_distance(query_vec, target_vec):
-    pass
+# compute EMD distances of query shape to the rest of shapes
+from scipy.stats import wasserstein_distance
+
+hist_distances = []
+for i in range(len(rest_of_hist_vecs)):
+
+    # check that index is not the one we dropped
+    if i != qhv_idx:
+        query_hist_vec = np.asanyarray(query_hist_vec).reshape(50)
+        target_hist_vec = np.asanyarray(rest_of_hist_vecs.loc[i]).reshape(50)
+        # print(f"QUERY VEC: {type(query_hist_vec)}, {query_hist_vec.shape}\nTARGET VEC: {type(target_hist_vec)}, {target_hist_vec.shape}")
+        dist = round(wasserstein_distance(query_hist_vec, target_hist_vec), 3)
+        # print(f"DIST: {dist}\n")
+        hist_distances.append(dist)
+    else:
+        continue
+
+print("\n=== EMD DISTANCES BETWEEN QUERY HIST FEAT VEC AND REST OF DB HIST FEAT VECS ===\n")
+
+# sort distances from high to low
+sorted_hist_distances = sorted(hist_distances, reverse=True)
+
+# get k=5 best-matching shapes
+k_best_matches = sorted_hist_distances[:5]
+print(f"These are the k=5 best matches:\n{k_best_matches}\n")
+
+# get best-matching shapes based on t=0.02 distance treshold
+t_best_matches = [dist for dist in hist_distances if dist >= 0.02]
+print(f"These are the t=0.02 best matches:\n{t_best_matches}\n")
+
