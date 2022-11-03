@@ -37,6 +37,8 @@ mesh_path = str(input("Upload query mesh from disk"))
 # CALL NORMALIZATION PIPELINE
 def normalize_mesh(mesh_path):
 
+    print("Normalizing mesh...")
+
     if mesh_path.endswith(('.ply', '.obj', '.off')):
 
         # load mesh from path
@@ -45,7 +47,7 @@ def normalize_mesh(mesh_path):
         # extract attributes as a dict
         raw_mesh_attributes = extract_attributes_from_mesh(norm_mesh)
 
-        ''' RESAMPLING '''
+        ''' resampling '''
 
         # if mesh has less than 3500 vertices (IS_OUT_LOW), then subdivide and remesh
         if raw_mesh_attributes['is_out_low']:
@@ -65,7 +67,7 @@ def normalize_mesh(mesh_path):
                 norm_mesh = norm_mesh.simplify_quadratic_decimation(35000)
 
 
-        ''' NORMALIZATION '''
+        ''' normalization '''
 
         # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
         norm_mesh = center_at_origin(norm_mesh)
@@ -89,6 +91,8 @@ norm_mesh, norm_mesh_attributes = normalize_mesh(mesh_path)
 
 def extract_features(norm_mesh):
 
+    print("Extracting features...")
+
     scalar_feats = extract_scalar_features(norm_mesh)
     hist_feats = extract_hist_features(norm_mesh)
     all_feats = pd.merge(scalar_feats, hist_feats)
@@ -98,47 +102,48 @@ def extract_features(norm_mesh):
 query_feats = extract_features(norm_mesh)
 
 # GET FEATURE VECTORS FROM ALL NORMALIZED DB
-db_feats = pd.read_csv("norm_db_features.csv")
+db_feats = pd.read_csv("norm_db_features.csv") # THIS HAS TO BE CREATED
 
 # COMPUTE QUERY FEATURE VECTOR DISTANCES FROM ALL REST OF OTHER VECTORS
 def compute_distances(query_feat_vector, db_feat_vectors):
 
-    # compute scalar distances of query shape to the rest of shapes
-    scalar_distances = []
+    print("Computing distances from query to rest of DB...")
+
+    # define main distances dict holding required information
+    distances = {'filenames': [fname for fname in db_feat_vectors['filename']], 'all_distances': []}
+
+    # compute euclidean distances on scalar features of query shape to the rest of shapes
     for i in range(len(db_feat_vectors[['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']])):
         target_scalar_vec = db_feat_vectors.loc[i]
         dist = round(euclidean_distance(query_feat_vector, target_scalar_vec), 3)
-        scalar_distances.append(dist)
+        distances['all_distances'].append(dist)
 
-    # compute EMD distances of query shape to the rest of shapes
+    # compute EMD distances on hist features of query shape to the rest of shapes
     from scipy.stats import wasserstein_distance
-
-    hist_distances = []
     for i in range(len(db_feat_vectors[['A3_0', 'A3_1', 'A3_2', 'A3_3', 'A3_4', 'A3_5', 'A3_6', 'A3_7', 'A3_8', 'A3_9',
                                         'D1_0', 'D1_1', 'D1_2', 'D1_3', 'D1_4', 'D1_5', 'D1_6', 'D1_7', 'D1_8', 'D1_9',
                                         'D2_0', 'D2_1', 'D2_2', 'D2_3', 'D2_4', 'D2_5', 'D2_6', 'D2_7', 'D2_8', 'D2_9',
                                         'D3_0', 'D3_1', 'D3_2', 'D3_3', 'D3_4', 'D3_5', 'D3_6', 'D3_7', 'D3_8', 'D3_9',
                                         'D4_0', 'D4_1', 'D4_2', 'D4_3', 'D4_4', 'D4_5', 'D4_6', 'D4_7', 'D4_8', 'D4_9']])):
 
-
         query_feat_vector = np.asanyarray(query_feat_vector).reshape(50)
         target_hist_vec = np.asanyarray(db_feat_vectors.loc[i]).reshape(50)
         dist = round(wasserstein_distance(query_feat_vector, target_hist_vec), 3)
-        hist_distances.append(dist)
-
-    # merge distances
-    all_distances = scalar_distances.extend(hist_distances)
+        distances['all_distances'].append(dist)
+        
+    # sort distances from low to high before returning
+    # HERE WE ACTUALLY ALSO WANT TO SORT THE FILENAMES (I.E. KEEP THEIR REFERENCE TO THE SHAPES)
+    # OTHERWISE WE CAN'T DISPLAY THEM AFTER
+    # BUT CAN'T JUST SORT ALSO THE FILENAME KEY IN THE DICT CAUSE THAT WOULD BE BASED ON ANOTHER CRITERIA (E.G. ALPHABETICAL)
+    distances['all_distances'] = sorted(distances['all_distances'])
     
-    return all_distances
+    return distances
 
 # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS
-all_distances = compute_distances(query_feats, db_feats)
-
-# sort distances from low to high
-sorted_distances = sorted(all_distances)
+distances = compute_distances(query_feats, db_feats)
 
 # get k=5 best-matching shapes (the 5 lowest distances)
-k_best_matches = sorted_distances[:5]
+k_best_matches = [(fname, dist) for fname, dist in zip(distances['filenames'][:5], distances['all_distances'][:5])]
 print(f"These are the k=5 best matches:\n{k_best_matches}\n")
 
 # RETRIEVE K OR T meshS BASED ON DISTANCES
