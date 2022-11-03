@@ -44,27 +44,30 @@ def get_diameter(mesh, method="fast"):
     '''given a mesh, get the furthest points on the convex haul and then try all possible combinations
     of the distances between points and return the max one'''
 
-    convex_hull = mesh.convex_hull
-    max_dist = 0
-    vertices = list(convex_hull.vertices)
-    
-    
-    if method == "fast": # if fast method, REDUCE nr vertices
-        """THIS CODE IS NOT THE RIGHT APPROACH JUST FASTER BY SAMPLING 100 POINTS"""
-        
-        if len(vertices) > 100:
-            vertices = random.sample(vertices, 100)
-            
-    if method == "slow":
-        pass
-        
-    for i in range(len(vertices)):
-        for j in range(i, len(vertices)):
-            dist = np.linalg.norm(vertices[i] - vertices[j])
-            if dist > max_dist:
-                max_dist = dist
-    
-    return max_dist
+    # convex_hull = mesh.convex_hull
+    # max_dist = 0
+    # vertices = list(convex_hull.vertices)
+    #
+    #
+    # if method == "fast": # if fast method, REDUCE nr vertices
+    #     """THIS CODE IS NOT THE RIGHT APPROACH JUST FASTER BY SAMPLING 100 POINTS"""
+    #
+    #     if len(vertices) > 100:
+    #         vertices = random.sample(vertices, 100)
+    #
+    # if method == "slow":
+    #     pass
+    #
+    # for i in range(len(vertices)):
+    #     for j in range(i, len(vertices)):
+    #         dist = np.linalg.norm(vertices[i] - vertices[j])
+    #         if dist > max_dist:
+    #             max_dist = dist
+    #
+    # return max_dist
+
+    # This does basically the same as the code above but using some kind of splitting algorithm to make the lookup faster
+    return trimesh.nsphere.minimum_nsphere(mesh)[1] * 2
 diameter = get_diameter(mesh)
 
 def get_eccentricity(mesh):
