@@ -21,7 +21,6 @@ NORM_PATH = "./reduced-normalized-psb-db/"
 attributes_df = pd.read_csv("./attributes/reduced-normalized-PSB-attributes.csv")
 file2class, class2files = filename_to_class(attributes_df) # create dicts mapping filenames to categories
 
-
 # code below to check if any shape has holes
 # root = "./normalized-psb-db/"
 # for mesh in os.listdir(root):
@@ -65,8 +64,6 @@ def get_diameter(mesh, method="fast"):
             if dist > max_dist:
                 max_dist = dist
     
-        
-
     return max_dist
 diameter = get_diameter(mesh)
 
@@ -224,8 +221,6 @@ def extract_scalar_features(root, to_csv=False, standardize = False):
 
     # initialize dictionary holding feature values
     scalar_features = defaultdict(list)
-
-    
 
     for file in tqdm(os.listdir(root)):
         mesh = trimesh.load(root + file)

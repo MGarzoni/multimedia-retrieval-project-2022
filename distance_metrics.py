@@ -107,8 +107,8 @@ for i in range(len(rest_of_hist_vecs)):
 
 print("\n=== EMD DISTANCES BETWEEN QUERY HIST FEAT VEC AND REST OF DB HIST FEAT VECS ===\n")
 
-# sort distances from high to low
-sorted_hist_distances = sorted(hist_distances, reverse=True)
+# sort distances from low to high
+sorted_hist_distances = sorted(hist_distances)
 
 # get k=5 best-matching shapes
 k_best_matches = sorted_hist_distances[:5]
