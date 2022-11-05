@@ -8,6 +8,8 @@ import math
 import seaborn as sns
 import random
 from matplotlib import pyplot as plt
+
+import reporting
 from utils import *
 from collections import defaultdict
 from tqdm import tqdm
@@ -342,8 +344,11 @@ def categories_visualize(hist_df):
     # create another dictionary in this py file that holds the bins for all these histograms
     # use those bins to graph the histograms, one graph per class
     # then put the graphs in a nice grid
-        
-scalar_matrix = extract_scalar_features(NORM_PATH, to_csv=True, standardize = True)
+
+EXTRACT_FEATURES = False
+
+if EXTRACT_FEATURES:
+    scalar_matrix = extract_scalar_features(NORM_PATH, to_csv=True, standardize = True)
 # extract_hist_features(NORM_PATH, to_csv=True)
 
 # checking feature extraction by picking some very different samples and showing that feat values are also very different
@@ -357,6 +362,10 @@ non_eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[1].
 
 eccentric_example_0.plot(title='Airplane 0', kind='bar')
 non_eccentric_example_0.plot(title='Cup 0', kind='bar')
+
+report = reporting.FeatureReport(hist_df)
+report.save('feature_plots')
+report.save('feature_plots_grouped', True)
 
 # testing diameter, fast vs. slow
 errors = []
