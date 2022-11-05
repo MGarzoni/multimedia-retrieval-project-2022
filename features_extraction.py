@@ -368,16 +368,16 @@ report.save('feature_plots')
 report.save('feature_plots_grouped', True)
 
 # testing diameter, fast vs. slow
-errors = []
-nvert = []
-for file in tqdm(os.listdir(NORM_PATH)):
-    mesh = trimesh.load(NORM_PATH + file)
-    fast_diam = get_diameter(mesh, method = "fast")
-    slow_diam = get_diameter(mesh, method = "slow")
-    error = (fast_diam-slow_diam)/slow_diam
-    print("Fast dimeter:", fast_diam, "Slow diameter:", slow_diam,
-          "Error fraction:", error, "#vertices", len(mesh.vertices))
-    errors.append(error)
-    nvert.append(len(mesh.vertices))
-plt.plot(nvert, errors)
+# errors = []
+# nvert = []
+# for file in tqdm(os.listdir(NORM_PATH)):
+#     mesh = trimesh.load(NORM_PATH + file)
+#     fast_diam = get_diameter(mesh, method = "fast")
+#     slow_diam = get_diameter(mesh, method = "slow")
+#     error = (fast_diam-slow_diam)/slow_diam
+#     print("Fast dimeter:", fast_diam, "Slow diameter:", slow_diam,
+#           "Error fraction:", error, "#vertices", len(mesh.vertices))
+#     errors.append(error)
+#     nvert.append(len(mesh.vertices))
+# plt.plot(nvert, errors)
 

@@ -82,23 +82,23 @@ class ShapeReport:
 class FeatureReport:
     config = {
         'a3': {
-            'title': 'Extracted a3 features for $shape_class',
+            'title': 'a3, $shape_class',
             'range': (0, math.pi)
         },
         'd1': {
-            'title': 'Extracted d1 features for $shape_class',
+            'title': 'd1, $shape_class',
             'range': (0, math.sqrt(3))
         },
         'd2': {
-            'title': 'Extracted d2 features for $shape_class',
+            'title': 'd2, $shape_class',
             'range': (0, math.sqrt(3))
         },
         'd3': {
-            'title': 'Extracted d3 features for $shape_class',
+            'title': 'd3, $shape_class',
             'range': (0, 0.85)
         },
         'd4': {
-            'title': 'Extracted d4 features for $shape_class',
+            'title': 'd4, $shape_class',
             'range': (0, 1.0)
         }
     }
@@ -143,7 +143,10 @@ class FeatureReport:
                         ax.plot(bins[:-1], shape_feature)
 
                     # Update the axes and limits
-                    ax.set_title(self.config[key]['title'].replace('$shape_class', shape_class))
+                    ax.set_title(self.config[key]['title'].replace('$shape_class', shape_class), 
+                                 fontsize=8,
+                                 y=1.0, pad=-14)
+                    
                     ax.set_xlim(self.config[key]['range'])
 
                 # Save the combined plots
