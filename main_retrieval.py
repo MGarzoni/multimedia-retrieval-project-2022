@@ -49,7 +49,6 @@ def normalize_mesh(mesh_path):
 
         ''' resampling '''
 
-        # if mesh has less than 3500 vertices (IS_OUT_LOW), then subdivide and remesh
         if raw_mesh_attributes['is_out_low']:
 
             # while the # vertices is lower than 3500
@@ -58,7 +57,6 @@ def normalize_mesh(mesh_path):
                 norm_mesh = norm_mesh.subdivide()
                 print("# vertices after subdivision:", len(norm_mesh.vertices))
 
-        # if mesh has more than 17500 vertices (IS_OUT_HIGH), then remove vertices and remesh
         if raw_mesh_attributes['is_out_high']:
 
             # while the # vertices is higher than 17500
@@ -139,12 +137,12 @@ def compute_distances(query_feat_vector, db_feat_vectors):
     
     return distances
 
-# SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS
+# SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
 distances = compute_distances(query_feats, db_feats)
 
 # get k=5 best-matching shapes (the 5 lowest distances)
 k_best_matches = [(fname, dist) for fname, dist in zip(distances['filenames'][:5], distances['all_distances'][:5])]
 print(f"These are the k=5 best matches:\n{k_best_matches}\n")
 
-# RETRIEVE K OR T meshS BASED ON DISTANCES
-# DISPLAY MESHES
+# DISPLAY MESHES IN GUI
+
