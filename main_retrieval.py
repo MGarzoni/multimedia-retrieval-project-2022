@@ -62,7 +62,7 @@ def normalize_mesh(mesh_path):
             # while the # vertices is higher than 17500
             # use open3d for decreasing # vertices
             while len(norm_mesh.vertices) >= IS_OUT_HIGH:
-                norm_mesh = norm_mesh.simplify_quadratic_decimation(35000)
+                norm_mesh = norm_mesh.simplify_quadratic_decimation(17500)
 
 
         ''' normalization '''
@@ -110,10 +110,10 @@ def compute_distances(query_feat_vector, db_feat_vectors):
     # define main distances dict holding required information
     distances = {'filenames': [fname for fname in db_feat_vectors['filename']], 'all_distances': []}
 
-    # compute euclidean distances on scalar features of query shape to the rest of shapes
+    # compute cosine distances on scalar features of query shape to the rest of shapes
     for i in range(len(db_feat_vectors[['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']])):
         target_scalar_vec = db_feat_vectors.loc[i]
-        dist = round(euclidean_distance(query_feat_vector, target_scalar_vec), 3)
+        dist = round(cosine_distance(query_feat_vector, target_scalar_vec), 3)
         distances['all_distances'].append(dist)
 
     # compute EMD distances on hist features of query shape to the rest of shapes
