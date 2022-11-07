@@ -38,7 +38,7 @@ mesh_path = str(mesh_path)
 # CALL NORMALIZATION PIPELINE
 def normalize_mesh_from_path(mesh_path):
 
-    print("Normalizing mesh...")
+    print("Normalizing mesh...")`~თ
 
     if mesh_path.endswith(('.ply', '.obj', '.off')):
 
@@ -46,7 +46,7 @@ def normalize_mesh_from_path(mesh_path):
         norm_mesh = trimesh.load(mesh_path)
 
         # extract attributes as a dict
-        raw_mesh_attributes = extract_attributes_from_mesh(norm_mesh)
+        raw_mesh_attributes = extract_attributes_from_mesh(norm_mesh, mesh_path)
         print("Iported new mesh. Initial RAW attributes:", raw_mesh_attributes)
 
         ''' resampling '''
@@ -73,7 +73,7 @@ def normalize_mesh_from_path(mesh_path):
         norm_mesh = normalize_mesh(norm_mesh)
         
         # calculate attributes of NEW mesh.
-        norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh)
+        norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh, mesh_path = None) # the normalized mesh has no file path
         print("Normalized mesh. New attributes:", norm_mesh_attributes)
 
     return norm_mesh, norm_mesh_attributes
