@@ -39,8 +39,6 @@ def extract_attributes_from_mesh(mesh, mesh_path=None):
     """Extract features from a mesh that has already been loaded"""
     
     if mesh_path == None:
-        print("""Extracted attributes from given mesh in extract_attributes_from_mesh(mesh), but no mesh path given!\n
-              Inserting placeholders.""")
         mesh_path = "NOPATH/NOPATH/NOPATH"
     
     # get moments of inertia just ONCE

@@ -47,6 +47,7 @@ def normalize_mesh_from_path(mesh_path):
 
         # extract attributes as a dict
         raw_mesh_attributes = extract_attributes_from_mesh(norm_mesh)
+        print("Iported new mesh. Initial RAW attributes:", raw_mesh_attributes)
 
         ''' resampling '''
 
@@ -73,6 +74,7 @@ def normalize_mesh_from_path(mesh_path):
         
         # calculate attributes of NEW mesh.
         norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh)
+        print("Normalized mesh. New attributes:", norm_mesh_attributes)
 
     return norm_mesh, norm_mesh_attributes
 
@@ -83,7 +85,8 @@ def extract_features(norm_mesh):
 
     print("Extracting features...")
 
-    scalar_feats = extract_scalar_features(norm_mesh)
+    scalar_feats = extract_scalar_features_single(norm_mesh)
+    print("SCALAR:", scalar_feats)
     hist_feats = extract_hist_features(norm_mesh)
     all_feats = pd.merge(scalar_feats, hist_feats)
 
