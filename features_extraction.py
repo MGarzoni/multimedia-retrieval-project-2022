@@ -14,33 +14,13 @@ from utils import *
 from collections import defaultdict
 from tqdm import tqdm
 
-# load sample mesh
-test_mesh = "./psb-labeled-db/Armadillo/284.off"
-mesh = trimesh.load(test_mesh)
+'''SHAPE PROPERTY DESCRIPTORS (DISTRIBUTIONS)'''
+# constants for histograms
+SAMPLE_N = 2000 # nr random samples taken for each distributional feature
+BINS = 10
+random.seed(42)
 
-# define which database we are extracting features from here
-NORM_PATH = "./reduced-normalized-psb-db/"
-attributes_df = pd.read_csv("./attributes/reduced-normalized-PSB-attributes.csv")
-file2class, class2files = filename_to_class(attributes_df) # create dicts mapping filenames to categories
 
-# code below to check if any shape has holes
-# root = "./normalized-psb-db/"
-# for mesh in os.listdir(root):
-#     if ".txt" not in mesh:
-#         mesh = trimesh.load(root + mesh)
-#         if not mesh.is_watertight:
-#             print('mesh has holes:')
-#             print(f"\tmesh volume before stitching: {mesh.volume}")
-#             mesh.fill_holes()
-#             print(f"\tmesh volume after stitching {mesh.volume}")
-#         else:
-#             print('mesh has NO holes')
-
-'''SIMPLE 3D GLOBAL DESCRIPTORS'''
-area = mesh.area
-volume = mesh.volume
-aabb_volume = mesh.bounding_box_oriented.volume
-compactness = pow(area, 3) / pow(volume, 2)
 
 def get_diameter(mesh, method="fast"):
     '''given a mesh, get the furthest points on the convex haul and then try all possible combinations
@@ -70,7 +50,6 @@ def get_diameter(mesh, method="fast"):
 
     # This does basically the same as the code above but using some kind of splitting algorithm to make the lookup faster
     return trimesh.nsphere.minimum_nsphere(mesh)[1] * 2
-diameter = get_diameter(mesh)
 
 def get_eccentricity(mesh):
     '''same as for alignment: given a mesh, get the covariance matrix of the vertices, get eigens
@@ -80,13 +59,7 @@ def get_eccentricity(mesh):
     eigenvalues, eigenvectors = np.linalg.eig(covariance)
 
     return np.max(eigenvalues) / np.min(eigenvalues)
-eccentricity = get_eccentricity(mesh)
 
-'''SHAPE PROPERTY DESCRIPTORS (DISTRIBUTIONS)'''
-# constants for histograms
-SAMPLE_N = 2000 # nr random samples taken for each distributional feature
-BINS = 10
-random.seed(42)
 
 def normalized_histogram_no_bins(values, range = None):
     """Sums to 1, BINS nr of bins, range given by range
@@ -213,14 +186,14 @@ def calculate_d4(mesh):
 
 '''FEATURE EXTRACTION'''
 
-# this dict stores the feature names and corresponding calculation methods
-feature_methods = {"a3":calculate_a3, 
+# this dict stores the distributional feature names and corresponding calculation methods
+hist_feature_methods = {"a3":calculate_a3, 
                    "d1":calculate_d1, 
                    "d2":calculate_d2,
                    "d3":calculate_d3, 
                    "d4":calculate_d4}
 
-def extract_scalar_features(root, to_csv=False, standardize = False):
+def extract_scalar_features_from_db(root, to_csv=False, standardize = False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
     and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
@@ -231,12 +204,12 @@ def extract_scalar_features(root, to_csv=False, standardize = False):
         mesh = trimesh.load(root + file)
         scalar_features['filename'].append(file)
         scalar_features['category'].append(file2class[file])
-        scalar_features['area'].append(mesh.area)
-        scalar_features['volume'].append(mesh.volume) # no need to check if mesh has holes cause already checked that no mesh does
-        scalar_features['aabb_volume'].append(mesh.bounding_box_oriented.volume)
-        scalar_features['compactness'].append(pow(mesh.area, 3) / pow(mesh.volume, 2))
-        scalar_features['diameter'].append(get_diameter(mesh))
-        scalar_features['eccentricity'].append(get_eccentricity(mesh))
+        
+        
+        # calculate features and put into dictionary
+        new_object_features = extract_scalar_features_single(mesh) # this returns a dict of features for the mesh
+        for key, value in new_object_features.items(): # append the new values to the scalar_features dictionary lists
+            scalar_features[key].append(value)
 
         # print(f"processed {file}")
 
@@ -247,13 +220,18 @@ def extract_scalar_features(root, to_csv=False, standardize = False):
         features_to_standardize = ["area", "volume", "aabb_volume", 
                         "compactness", "diameter", "eccentricity"]
         for feature in features_to_standardize:
+            
+            # STANDARDIZE EACH FEATURE'S COLUMN 
             scalar_features_matrix[feature], mean, std = standardize_column(scalar_features_matrix[feature])
+            
+            # SAVE STANDARDIZATION PARAMETERS
             standardization_dict["feature"].append(feature)
             standardization_dict["mean"].append(mean)
             standardization_dict["std"].append(std)
             
 
-    # export to csv (standardization parameters too)
+    # export to csv 
+    # (STANDARDIZATION PARAMETERS EXPORTED too)
     if to_csv:
         scalar_features_matrix.to_csv('./features/scalar_features.csv')
         if standardize:
@@ -261,8 +239,19 @@ def extract_scalar_features(root, to_csv=False, standardize = False):
 
     return scalar_features_matrix
 
+def extract_scalar_features_single(mesh):
+    """Extract scalar features from a single mesh. Return as dictionary."""
+    scalar_features = {}
+    scalar_features['area'] = mesh.area
+    scalar_features['volume'] = mesh.volume # assume mesh has NO HOLES
+    scalar_features['aabb_volume'] = mesh.bounding_box_oriented.volume
+    scalar_features['compactness'] = pow(mesh.area, 3) / pow(mesh.volume, 2)
+    scalar_features['diameter'] = get_diameter(mesh)
+    scalar_features['eccentricity'] = get_eccentricity(mesh)
+    
+    return scalar_features
 
-def extract_hist_features(root, to_csv=False):
+def extract_hist_features_from_db(root, to_csv=False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
     and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
@@ -282,12 +271,12 @@ def extract_hist_features(root, to_csv=False):
     
         
         # calcualte the histograms for each feature using the corresponding method from the dict
-        feature_hists = {feature:method_name(mesh) for feature, method_name in feature_methods.items()}
+        feature_hists = {feature:method_name(mesh) for feature, method_name in hist_feature_methods.items()}
         
         #  now save these entries in the hist_bins dictionary
         hist_bins['filename'].append(file)
         hist_bins['category'].append(file2class[file])
-        for feature in feature_methods.keys():
+        for feature in hist_feature_methods.keys():
             for i in range(BINS):
                 hist_bins[f"{feature}_{i}"].append(feature_hists[feature][i])
 
@@ -332,7 +321,7 @@ def standardize_value(value, mean, std, verbose = False):
 '''FEATURE EXTRACTION'''
 def categories_visualize(hist_df):
     
-    feature_names = feature_methods.keys()
+    feature_names = hist_feature_methods.keys()
     for bin_index in range(BINS):
         pass
     
@@ -344,40 +333,82 @@ def categories_visualize(hist_df):
     # create another dictionary in this py file that holds the bins for all these histograms
     # use those bins to graph the histograms, one graph per class
     # then put the graphs in a nice grid
+    
+# Code below will not run if we are only importing
+if __name__ == "__main__":
+    
+    """============Loading and extracting features from sample mesh==============="""
+    
+    # load SAMPLE MESH mesh
+    test_mesh = "./psb-labeled-db/Armadillo/284.off"
+    mesh = trimesh.load(test_mesh)
+    
+    
+    '''SIMPLE 3D GLOBAL DESCRIPTORS of SAMPLE MESH'''
+    area = mesh.area
+    volume = mesh.volume
+    aabb_volume = mesh.bounding_box_oriented.volume
+    compactness = pow(area, 3) / pow(volume, 2)
+    
+    # scalar feature functions
+    diameter = get_diameter(mesh)
+    eccentricity = get_eccentricity(mesh)
 
-EXTRACT_FEATURES = False
+    # define which database we are extracting features from here
+    NORM_PATH = "./reduced-normalized-psb-db/"
+    attributes_df = pd.read_csv("./attributes/reduced-normalized-PSB-attributes.csv")
+    file2class, class2files = filename_to_class(attributes_df) # create dicts mapping filenames to categories
 
-if EXTRACT_FEATURES:
-    scalar_matrix = extract_scalar_features(NORM_PATH, to_csv=True, standardize = True)
-# extract_hist_features(NORM_PATH, to_csv=True)
+    # code below to check if any shape has holes
+    # root = "./normalized-psb-db/"
+    # for mesh in os.listdir(root):
+    #     if ".txt" not in mesh:
+    #         mesh = trimesh.load(root + mesh)
+    #         if not mesh.is_watertight:
+    #             print('mesh has holes:')
+    #             print(f"\tmesh volume before stitching: {mesh.volume}")
+    #             mesh.fill_holes()
+    #             print(f"\tmesh volume after stitching {mesh.volume}")
+    #         else:
+    #             print('mesh has NO holes')
 
-# checking feature extraction by picking some very different samples and showing that feat values are also very different
-scalar_df = pd.read_csv("./features/scalar_features.csv")
-hist_df = pd.read_csv('./features/hist_features.csv')
 
-eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
-eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
-non_eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
-non_eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+    """============EXTRACT FEATURES FORM DATABASE=========="""
 
-eccentric_example_0.plot(title='Airplane 0', kind='bar')
-non_eccentric_example_0.plot(title='Cup 0', kind='bar')
-
-report = reporting.FeatureReport(hist_df)
-report.save('feature_plots')
-report.save('feature_plots_grouped', True)
-
-# testing diameter, fast vs. slow
-# errors = []
-# nvert = []
-# for file in tqdm(os.listdir(NORM_PATH)):
-#     mesh = trimesh.load(NORM_PATH + file)
-#     fast_diam = get_diameter(mesh, method = "fast")
-#     slow_diam = get_diameter(mesh, method = "slow")
-#     error = (fast_diam-slow_diam)/slow_diam
-#     print("Fast dimeter:", fast_diam, "Slow diameter:", slow_diam,
-#           "Error fraction:", error, "#vertices", len(mesh.vertices))
-#     errors.append(error)
-#     nvert.append(len(mesh.vertices))
-# plt.plot(nvert, errors)
+    
+    EXTRACT_FEATURES = False
+    
+    if EXTRACT_FEATURES:
+        scalar_matrix = extract_scalar_features_from_db(NORM_PATH, to_csv=True, standardize = True)
+        # extract_hist_features_from_db(NORM_PATH, to_csv=True)
+    
+    # checking feature extraction by picking some very different samples and showing that feat values are also very different
+    scalar_df = pd.read_csv("./features/scalar_features.csv")
+    hist_df = pd.read_csv('./features/hist_features.csv')
+    
+    eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
+    eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+    non_eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
+    non_eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+    
+    eccentric_example_0.plot(title='Airplane 0', kind='bar')
+    non_eccentric_example_0.plot(title='Cup 0', kind='bar')
+    
+    report = reporting.FeatureReport(hist_df)
+    report.save('feature_plots')
+    report.save('feature_plots_grouped', True)
+    
+    # testing diameter, fast vs. slow
+    # errors = []
+    # nvert = []
+    # for file in tqdm(os.listdir(NORM_PATH)):
+    #     mesh = trimesh.load(NORM_PATH + file)
+    #     fast_diam = get_diameter(mesh, method = "fast")
+    #     slow_diam = get_diameter(mesh, method = "slow")
+    #     error = (fast_diam-slow_diam)/slow_diam
+    #     print("Fast dimeter:", fast_diam, "Slow diameter:", slow_diam,
+    #           "Error fraction:", error, "#vertices", len(mesh.vertices))
+    #     errors.append(error)
+    #     nvert.append(len(mesh.vertices))
+    # plt.plot(nvert, errors)
 

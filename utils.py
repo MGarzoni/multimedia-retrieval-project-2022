@@ -35,8 +35,13 @@ def extract_attributes_from_path(mesh_path):
 
     return extract_attributes_from_mesh(mesh, mesh_path)
 
-def extract_attributes_from_mesh(mesh, mesh_path):
+def extract_attributes_from_mesh(mesh, mesh_path=None):
     """Extract features from a mesh that has already been loaded"""
+    
+    if mesh_path == None:
+        print("""Extracted attributes from given mesh in extract_attributes_from_mesh(mesh), but no mesh path given!\n
+              Inserting placeholders.""")
+        mesh_path = "NOPATH/NOPATH/NOPATH"
     
     # get moments of inertia just ONCE
     fx, fy, fz = moments_of_inertia(mesh)
@@ -144,6 +149,8 @@ def before_after(mesh1, mesh2, corners = None):
     save_mesh_png(mesh1, "before", corners = corners)
     save_mesh_png(mesh2, "after", corners = corners)
     
+
+    
 def pca_eigenvectors(mesh, verbose = False):
     """"Return PCA eigenvectors (major variance first, least variance last)"""
     
@@ -223,6 +230,25 @@ def moments_of_inertia(mesh):
                         axis = 0)
     
     return fx, fy, fz
+
+def normalize_mesh(mesh, verbose = False):
+    # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
+    mesh = center_at_origin(mesh)
+    # if verbose: save_mesh_png(mesh, "2-translated", corners = CORNERS)
+
+    # align pca: x axis is most variance, z axis is least variance
+    mesh = pca_align(mesh)
+    # if verbose: save_mesh_png(mesh, "4-pca", corners = CORNERS)
+    
+    # moment test
+    mesh = moment_flip(mesh)
+    # if verbose: save_mesh_png(mesh, "5-moment", corners = CORNERS)
+    
+    # scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
+    mesh = scale_to_unit(mesh)
+    # if verbose: save_mesh_png(mesh, "3-scaled", corners = CORNERS)
+    
+    return mesh
 
 def test_mesh_transformation(function):
     """Takes a hand mesh and transports it so that it is highly off-center. 

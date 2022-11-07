@@ -32,10 +32,11 @@ PIPELINE:
 
 # CALL GUI
 # USER LOADS IN QUERY MESH
-mesh_path = str(input("Upload query mesh from disk"))
+mesh_path = input("Paste path to query mesh from disk: ")
+mesh_path = str(mesh_path)
 
 # CALL NORMALIZATION PIPELINE
-def normalize_mesh(mesh_path):
+def normalize_mesh_from_path(mesh_path):
 
     print("Normalizing mesh...")
 
@@ -68,24 +69,15 @@ def normalize_mesh(mesh_path):
         ''' normalization '''
 
         # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
-        norm_mesh = center_at_origin(norm_mesh)
-
-        # align pca: x axis is most variance, z axis is least variance
-        norm_mesh = pca_align(norm_mesh)
+        norm_mesh = normalize_mesh(norm_mesh)
         
-        # moment test
-        norm_mesh = moment_flip(norm_mesh)
-        
-        # scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
-        norm_mesh = scale_to_unit(norm_mesh)
-
-        # extract new attributes and overwrite the raw ones
-        norm_mesh_attributes = extract_attributes_from_path(mesh_path)
+        # calculate attributes of NEW mesh.
+        norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh)
 
     return norm_mesh, norm_mesh_attributes
 
 # CALL FEATURE EXTRACTION
-norm_mesh, norm_mesh_attributes = normalize_mesh(mesh_path)
+norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
 
 def extract_features(norm_mesh):
 

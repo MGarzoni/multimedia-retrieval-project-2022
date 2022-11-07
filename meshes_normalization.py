@@ -64,21 +64,7 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     
                     '''From here actual normalization begins'''
     
-                    # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
-                    mesh = center_at_origin(mesh)
-                    # if verbose: save_mesh_png(mesh, "2-translated", corners = CORNERS)
-    
-                    # align pca: x axis is most variance, z axis is least variance
-                    mesh = pca_align(mesh)
-                    # if verbose: save_mesh_png(mesh, "4-pca", corners = CORNERS)
-                    
-                    # moment test
-                    mesh = moment_flip(mesh)
-                    # if verbose: save_mesh_png(mesh, "5-moment", corners = CORNERS)
-                    
-                    # scale to cube vector (with scale_to_unit function from utils) (here bounds value changes)
-                    mesh = scale_to_unit(mesh)
-                    # if verbose: save_mesh_png(mesh, "3-scaled", corners = CORNERS)
+                    mesh = normalize_mesh(mesh)
     
                     '''From here we export normalized mesh as new .off file to normalized folder'''
     
