@@ -263,7 +263,9 @@ def extract_scalar_features_single_mesh(mesh, standardization_parameters_csv = N
         Return a DICTIONARY
         
         If no standardization csv given, standardization will not happen"""
-    scalar_features = {}
+        
+        
+    scalar_features = {} #initialize dictionary
     scalar_features['area'] = mesh.area
     scalar_features['volume'] = mesh.volume # assume mesh has NO HOLES
     scalar_features['aabb_volume'] = mesh.bounding_box_oriented.volume

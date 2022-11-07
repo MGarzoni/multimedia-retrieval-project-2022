@@ -98,7 +98,7 @@ def extract_features(norm_mesh):
 
     return scalar_feats, hist_feats_vector
 
-query_scalar, hist_feats_vector = extract_features(norm_mesh)
+query_scalar_dict, query_hist_vector = extract_features(norm_mesh)
 
 # GET FEATURE VECTORS FROM ALL NORMALIZED DB
 db_feats = pd.read_csv("norm_db_features.csv") # THIS HAS TO BE CREATED
