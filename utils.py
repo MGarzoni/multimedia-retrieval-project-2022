@@ -39,7 +39,7 @@ def extract_attributes_from_mesh(mesh, mesh_path=None):
     """Extract features from a mesh that has already been loaded."""
     
     if mesh_path == None:
-        mesh_path = "NOPATH/NOPATH/NOPATH"
+        mesh_path = "NA/NA/NA"
     
     # get moments of inertia just ONCE
     fx, fy, fz = moments_of_inertia(mesh)

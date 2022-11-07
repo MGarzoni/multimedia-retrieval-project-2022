@@ -281,15 +281,15 @@ def extract_scalar_features_single_mesh(mesh, standardization_parameters_csv = N
         params_dict = {row["feature"]:{"mean":row["mean"], 
                                        "std":row["std"]} for _, row in params_df.iterrows()}
         if verbose: 
-            print("Scalar features before standardization:\n", scalar_features)
-            print("Loaded standardization parameters:\n", params_dict)
+            print("\n\nScalar features before standardization:\n", scalar_features)
+            print("\n\n Loaded standardization parameters:\n", params_dict)
         
         # apply standardization parameters to respective features in scalar_features dicitonary
         for feature in scalar_features.keys():
             scalar_features[feature] = standardize_value(scalar_features[feature], 
                                                          params_dict[feature]["mean"], 
                                                          params_dict[feature]["std"])
-        if verbose: print("Scalar features AFTER standardization:\n", scalar_features)
+        if verbose: print("\n\nScalar features AFTER standardization:\n", scalar_features)
     
     return scalar_features
 
@@ -351,6 +351,8 @@ def extract_hist_features_single_mesh(mesh,
     
     # if as vector, return vector
     elif returntype == "vector":
+        
+        if verbose: print("\nExtracting histograms as single vector...\n")
         
         vector_length = BINS*len(hist_feature_methods)
         output_vector = np.empty([vector_length]) # initialize empty vector

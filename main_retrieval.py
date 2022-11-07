@@ -49,7 +49,7 @@ def normalize_mesh_from_path(mesh_path):
 
         # extract attributes as a dict
         raw_mesh_attributes = extract_attributes_from_mesh(norm_mesh, mesh_path)
-        print("Iported new mesh. Initial RAW attributes:", raw_mesh_attributes)
+        print("\n\nImported new mesh. Initial RAW attributes:\n\n", raw_mesh_attributes)
 
         ''' resampling '''
 
@@ -76,29 +76,34 @@ def normalize_mesh_from_path(mesh_path):
         
         # calculate attributes of NEW mesh.
         norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh, mesh_path = None) # the normalized mesh has no file path
-        print("Normalized mesh. New attributes:", norm_mesh_attributes)
+        print("\n\nNormalized mesh. New attributes:\n\n", norm_mesh_attributes)
 
     return norm_mesh, norm_mesh_attributes
 
 # CALL FEATURE EXTRACTION
 norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
 
-def extract_features(norm_mesh):
-
-    print("Extracting features...")
+def extract_features(norm_mesh, verbose = False):
+    """Extract features from a normalized mesh.
+    Scalar features are standardized with respect to standardization parameters of database
+    
+    RETURNS: scalar features as dictionary, histogram features as one long vector"""
+    
+    print("Extracting features from query object...")
 
     # extract scalar features as dictionary
     scalar_feats = extract_scalar_features_single_mesh(norm_mesh, 
-                                                  standardization_parameters_csv=STANDARDIZATION_CSV,
-                                                  verbose = True)    
+                                                  standardization_parameters_csv = STANDARDIZATION_CSV,
+                                                  verbose = verbose)    
     
     # extract histogram features as ONE LONG VECTOR!!! (should be same order as hist columns in .csv file)
     hist_feats_vector = extract_hist_features_single_mesh(norm_mesh, 
-                                                          returntype = "vector")
+                                                          returntype = "vector",
+                                                          verbose = verbose)
 
     return scalar_feats, hist_feats_vector
 
-query_scalar_dict, query_hist_vector = extract_features(norm_mesh)
+query_scalar_dict, query_hist_vector = extract_features(norm_mesh, verbose = True)
 
 # GET FEATURE VECTORS FROM ALL NORMALIZED DB
 db_feats = pd.read_csv("norm_db_features.csv") # THIS HAS TO BE CREATED
