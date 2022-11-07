@@ -207,11 +207,15 @@ def extract_scalar_features_from_db(root, to_csv=False, standardize = False):
         
         
         # calculate features and put into dictionary
-        new_object_features = extract_scalar_features_single(mesh) # this returns a dict of features for the mesh
+        # do NOT standardize yet!!!! this is done on the column as a whole
+        new_object_features = extract_scalar_features_single(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
         for key, value in new_object_features.items(): # append the new values to the scalar_features dictionary lists
             scalar_features[key].append(value)
 
         # print(f"processed {file}")
+        
+    print(scalar_features["diameter"])
+
 
     # construct df holding feat values
     scalar_features_matrix = pd.DataFrame.from_dict(scalar_features)
@@ -239,8 +243,12 @@ def extract_scalar_features_from_db(root, to_csv=False, standardize = False):
 
     return scalar_features_matrix
 
-def extract_scalar_features_single(mesh):
-    """Extract scalar features from a single mesh. Return as dictionary."""
+def extract_scalar_features_single(mesh, standardization_parameters_csv = None, verbose = False):
+    """Extract scalar features from a single mesh. Return as dictionary.
+        standardization_parameters_csv points to standardization
+        Return a DICTIONARY
+        
+        If no standardization csv given, standardization will not happen"""
     scalar_features = {}
     scalar_features['area'] = mesh.area
     scalar_features['volume'] = mesh.volume # assume mesh has NO HOLES
@@ -248,6 +256,24 @@ def extract_scalar_features_single(mesh):
     scalar_features['compactness'] = pow(mesh.area, 3) / pow(mesh.volume, 2)
     scalar_features['diameter'] = get_diameter(mesh)
     scalar_features['eccentricity'] = get_eccentricity(mesh)
+    
+    if standardization_parameters_csv: 
+        # if a standardization parameters csv is given, STANDARDIZE for each feature in parameters csv
+        
+        # get standardization parameters
+        params_df = pd.read_csv(standardization_parameters_csv)
+        params_dict = {row["feature"]:{"mean":row["mean"], 
+                                       "std":row["std"]} for _, row in params_df.iterrows()}
+        if verbose: 
+            print("Scalar features before standardization:\n", scalar_features)
+            print("Loaded standardization parameters:\n", params_dict)
+        
+        # apply standardization parameters to respective features in scalar_features dicitonary
+        for feature in scalar_features.keys():
+            scalar_features[feature] = standardize_value(scalar_features[feature], 
+                                                         params_dict[feature]["mean"], 
+                                                         params_dict[feature]["std"])
+        if verbose: print("Scalar features AFTER standardization:\n", scalar_features)
     
     return scalar_features
 
@@ -302,12 +328,12 @@ def standardize_column(column, mean=None, std=None):
     
     newcolumn = []
     for value in column:
-        newcolumn.append(standardize_value(value, mean, std, verbose = True))
+        newcolumn.append(standardize_value(value, mean, std, verbose = False))
     
     return newcolumn, mean, std
     
 
-def standardize_value(value, mean, std, verbose = False):
+def standardize_value(value, mean, std, verbose = True):
     """Standardize a single vanue given a mean and std
     CENTERED at 0.5 and most values will be within [0,1]"""
     standardized = (0.5 + (value-mean)/(7*std)) #distance from 0 to 1 should be n standard deviations
@@ -376,7 +402,7 @@ if __name__ == "__main__":
     """============EXTRACT FEATURES FORM DATABASE=========="""
 
     
-    EXTRACT_FEATURES = False
+    EXTRACT_FEATURES = True
     
     if EXTRACT_FEATURES:
         scalar_matrix = extract_scalar_features_from_db(NORM_PATH, to_csv=True, standardize = True)

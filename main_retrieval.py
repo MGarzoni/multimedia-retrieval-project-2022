@@ -35,10 +35,12 @@ PIPELINE:
 mesh_path = input("Paste path to query mesh from disk: ")
 mesh_path = str(mesh_path)
 
+STANDARDIZATION_CSV = "./features/standardization_parameters.csv"
+
 # CALL NORMALIZATION PIPELINE
 def normalize_mesh_from_path(mesh_path):
 
-    print("Normalizing mesh...")`~თ
+    print("Normalizing mesh...")
 
     if mesh_path.endswith(('.ply', '.obj', '.off')):
 
@@ -85,7 +87,9 @@ def extract_features(norm_mesh):
 
     print("Extracting features...")
 
-    scalar_feats = extract_scalar_features_single(norm_mesh)
+    scalar_feats = extract_scalar_features_single(norm_mesh, 
+                                                  standardization_parameters_csv=STANDARDIZATION_CSV,
+                                                  verbose = True)
     print("SCALAR:", scalar_feats)
     hist_feats = extract_hist_features(norm_mesh)
     all_feats = pd.merge(scalar_feats, hist_feats)

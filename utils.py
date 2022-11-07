@@ -36,7 +36,7 @@ def extract_attributes_from_path(mesh_path):
     return extract_attributes_from_mesh(mesh, mesh_path)
 
 def extract_attributes_from_mesh(mesh, mesh_path=None):
-    """Extract features from a mesh that has already been loaded"""
+    """Extract features from a mesh that has already been loaded."""
     
     if mesh_path == None:
         mesh_path = "NOPATH/NOPATH/NOPATH"
