@@ -18,7 +18,7 @@ from tqdm import tqdm
 # constants for histograms
 SAMPLE_N = 2000 # nr random samples taken for each distributional feature
 BINS = 10
-random.seed(42)
+random.seed(46)
 
 
 
@@ -76,6 +76,9 @@ def plot_hist(histogram):
 def calculate_a3(mesh):
     '''given an array of three-sized arrays (vertices),
     return the angles between every 3 vertices'''
+
+    random.seed(45)
+
     
     vertices = list(mesh.vertices)
 
@@ -109,6 +112,8 @@ def calculate_d1(mesh):
     center = mesh.centroid
     all_vertices = list(mesh.vertices)
     
+    random.seed(44)
+    
     vertices = random.sample(all_vertices, 1000) # repeats are possible
     
     for vertex in vertices:
@@ -123,6 +128,9 @@ def calculate_d2(mesh):
     '''given a mesh, return hist of distances between SAMPLE_N pairs of vertices
      Range is set to 0, 1.73 as a greater distance is not possible due to unit cube normalization'''
 
+
+    random.seed(43)
+    
     vertices = list(mesh.vertices)
 
     # generatre N pairs (could be repeats)
@@ -140,6 +148,9 @@ def calculate_d3(mesh):
     chosen by random trios of three vertices
     Area of a triangle made inside a unit cube can be no more than half the max
     Cross-section area, so no more than 0.7. Square root of that is no more than 0.85'''
+    
+    random.seed(42)
+
     
     vertices = list(mesh.vertices)
 
@@ -172,6 +183,9 @@ def calculate_d4(mesh):
     '''given a mesh, return the cube roots of volume of 
     SAMPLE_N tetrahedrons formed by 4 random vertices
     Volume could not be greater than 1 due to unit cube bounding box'''
+
+    random.seed(41)
+
 
     vertices = list(mesh.vertices)
     quartets = [random.sample(vertices, 4) for i in range(SAMPLE_N)]
@@ -208,7 +222,7 @@ def extract_scalar_features_from_db(root, to_csv=False, standardize = False):
         
         # calculate features and put into dictionary
         # do NOT standardize yet!!!! this is done on the column as a whole
-        new_object_features = extract_scalar_features_single(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
+        new_object_features = extract_scalar_features_single_mesh(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
         for key, value in new_object_features.items(): # append the new values to the scalar_features dictionary lists
             scalar_features[key].append(value)
 
@@ -243,7 +257,7 @@ def extract_scalar_features_from_db(root, to_csv=False, standardize = False):
 
     return scalar_features_matrix
 
-def extract_scalar_features_single(mesh, standardization_parameters_csv = None, verbose = False):
+def extract_scalar_features_single_mesh(mesh, standardization_parameters_csv = None, verbose = False):
     """Extract scalar features from a single mesh. Return as dictionary.
         standardization_parameters_csv points to standardization
         Return a DICTIONARY
@@ -296,8 +310,9 @@ def extract_hist_features_from_db(root, to_csv=False):
         # (these are assumed to be consistent)
     
         
-        # calcualte the histograms for each feature using the corresponding method from the dict
-        feature_hists = {feature:method_name(mesh) for feature, method_name in hist_feature_methods.items()}
+        # calcualte the histograms for each feature as a dictionary
+        feature_hists = extract_hist_features_single_mesh(mesh, 
+                                                          returntype = "dictionary")
         
         #  now save these entries in the hist_bins dictionary
         hist_bins['filename'].append(file)
@@ -317,6 +332,34 @@ def extract_hist_features_from_db(root, to_csv=False):
         hist_features_matrix.to_csv('./features/hist_features.csv')
 
     return hist_features_matrix
+
+def extract_hist_features_single_mesh(mesh, 
+                                      returntype = "dictionary",
+                                      verbose = False):
+    
+    """RETURN a vector of histogram bins, total length = nfeatures*BINS
+    Order of features is based on order of hist_feature_methods.keys()"""
+    
+    # get the histograms for each feature
+    feature_hists = {feature:hist_feature_methods[feature](mesh) for feature in hist_feature_methods.keys()}
+    
+    # if as dictionary, return dictionary of histograms
+    if returntype == "dictionary":
+        return feature_hists
+    
+    # if as vector, return vector
+    elif returntype == "vector":
+        
+        vector_length = BINS*len(hist_feature_methods)
+        output_vector = np.empty([vector_length]) # initialize empty vector
+        
+        # put them in a SINGLE vector in order of hist_feature_methods.keys())
+        for feature_index, feature in enumerate(hist_feature_methods.keys()):
+            for bin_index in range(BINS):
+                if verbose: print(f"Feature: {feature}, Bin: {bin_index}, Value: {feature_hists[feature][bin_index]}, Vector index: {feature_index*10+bin_index}")
+                output_vector[feature_index*10 + bin_index] = feature_hists[feature][bin_index]
+        return output_vector
+            
 
 def standardize_column(column, mean=None, std=None):
     """Take an iterable and standardize it (with given mean/std if given)

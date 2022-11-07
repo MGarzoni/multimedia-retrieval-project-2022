@@ -87,16 +87,18 @@ def extract_features(norm_mesh):
 
     print("Extracting features...")
 
-    scalar_feats = extract_scalar_features_single(norm_mesh, 
+    # extract scalar features as dictionary
+    scalar_feats = extract_scalar_features_single_mesh(norm_mesh, 
                                                   standardization_parameters_csv=STANDARDIZATION_CSV,
-                                                  verbose = True)
-    print("SCALAR:", scalar_feats)
-    hist_feats = extract_hist_features(norm_mesh)
-    all_feats = pd.merge(scalar_feats, hist_feats)
+                                                  verbose = True)    
+    
+    # extract histogram features as ONE LONG VECTOR!!! (should be same order as hist columns in .csv file)
+    hist_feats_vector = extract_hist_features_single_mesh(norm_mesh, 
+                                                          returntype = "vector")
 
-    return all_feats
+    return scalar_feats, hist_feats_vector
 
-query_feats = extract_features(norm_mesh)
+query_scalar, hist_feats_vector = extract_features(norm_mesh)
 
 # GET FEATURE VECTORS FROM ALL NORMALIZED DB
 db_feats = pd.read_csv("norm_db_features.csv") # THIS HAS TO BE CREATED
@@ -114,6 +116,8 @@ def compute_distances(query_feat_vector, db_feat_vectors):
         target_scalar_vec = db_feat_vectors.loc[i]
         dist = round(cosine_distance(query_feat_vector, target_scalar_vec), 3)
         distances['all_distances'].append(dist)
+        
+    query_feat_vector = np.asanyarray(query_feat_vector).reshape(50)
 
     # compute EMD distances on hist features of query shape to the rest of shapes
     from scipy.stats import wasserstein_distance
@@ -123,7 +127,6 @@ def compute_distances(query_feat_vector, db_feat_vectors):
                                         'D3_0', 'D3_1', 'D3_2', 'D3_3', 'D3_4', 'D3_5', 'D3_6', 'D3_7', 'D3_8', 'D3_9',
                                         'D4_0', 'D4_1', 'D4_2', 'D4_3', 'D4_4', 'D4_5', 'D4_6', 'D4_7', 'D4_8', 'D4_9']])):
 
-        query_feat_vector = np.asanyarray(query_feat_vector).reshape(50)
         target_hist_vec = np.asanyarray(db_feat_vectors.loc[i]).reshape(50)
         dist = round(wasserstein_distance(query_feat_vector, target_hist_vec), 3)
         distances['all_distances'].append(dist)
