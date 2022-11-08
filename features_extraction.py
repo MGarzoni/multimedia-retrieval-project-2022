@@ -214,17 +214,18 @@ def extract_scalar_features_from_db(root, to_csv=False, standardize = False):
     # initialize dictionary holding feature values
     scalar_features = defaultdict(list)
 
-    for file in tqdm(os.listdir(root)):
-        mesh = trimesh.load(root + file)
-        scalar_features['filename'].append(file)
-        scalar_features['category'].append(file2class[file])
-        
-        
-        # calculate features and put into dictionary
-        # do NOT standardize yet!!!! this is done on the column as a whole
-        new_object_features = extract_scalar_features_single_mesh(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
-        for key, value in new_object_features.items(): # append the new values to the scalar_features dictionary lists
-            scalar_features[key].append(value)
+    for category in tqdm(os.listdir(root)):
+        for file in os.listdir(os.path.join(root, category)):
+            mesh = trimesh.load(os.path.join(root, category, file))
+            scalar_features['filename'].append(file)
+            # scalar_features['category'].append(file2class[file])
+            scalar_features['category'].append(category)
+
+            # calculate features and put into dictionary
+            # do NOT standardize yet!!!! this is done on the column as a whole
+            new_object_features = extract_scalar_features_single_mesh(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
+            for key, value in new_object_features.items(): # append the new values to the scalar_features dictionary lists
+                scalar_features[key].append(value)
 
         # print(f"processed {file}")
         
@@ -305,25 +306,26 @@ def extract_hist_features_from_db(root, to_csv=False):
     hist_bins = defaultdict(list)
 
 
-    for file in tqdm(os.listdir(root)):
-        mesh = trimesh.load(root + file)
+    for category in tqdm(os.listdir(root)):
+        for file in os.listdir(os.path.join(root, category)):
+            mesh = trimesh.load(os.path.join(root, category, file))
 
-        # append only the VALUES of the histogram, not the bins
-        # (these are assumed to be consistent)
-    
-        
-        # calcualte the histograms for each feature as a dictionary
-        feature_hists = extract_hist_features_single_mesh(mesh, 
-                                                          returntype = "dictionary")
-        
-        #  now save these entries in the hist_bins dictionary
-        hist_bins['filename'].append(file)
-        hist_bins['category'].append(file2class[file])
-        for feature in hist_feature_methods.keys():
-            for i in range(BINS):
-                hist_bins[f"{feature}_{i}"].append(feature_hists[feature][i])
+            # append only the VALUES of the histogram, not the bins
+            # (these are assumed to be consistent)
 
-        print(f"processed {file}")
+
+            # calcualte the histograms for each feature as a dictionary
+            feature_hists = extract_hist_features_single_mesh(mesh,
+                                                              returntype = "dictionary")
+
+            #  now save these entries in the hist_bins dictionary
+            hist_bins['filename'].append(file)
+            hist_bins['category'].append(category)
+            for feature in hist_feature_methods.keys():
+                for i in range(BINS):
+                    hist_bins[f"{feature}_{i}"].append(feature_hists[feature][i])
+
+            print(f"processed {file}")
         
     # construct df holding feat values
     hist_features_matrix = pd.DataFrame.from_dict(hist_bins)
@@ -412,24 +414,24 @@ if __name__ == "__main__":
     
     """============Loading and extracting features from sample mesh==============="""
     
-    # load SAMPLE MESH mesh
-    test_mesh = "./psb-labeled-db/Armadillo/284.off"
-    mesh = trimesh.load(test_mesh)
-    
-    
-    '''SIMPLE 3D GLOBAL DESCRIPTORS of SAMPLE MESH'''
-    area = mesh.area
-    volume = mesh.volume
-    aabb_volume = mesh.bounding_box_oriented.volume
-    compactness = pow(area, 3) / pow(volume, 2)
-    
-    # scalar feature functions
-    diameter = get_diameter(mesh)
-    eccentricity = get_eccentricity(mesh)
-
-    # define which database we are extracting features from here
-    NORM_PATH = "./reduced-normalized-psb-db/"
-    attributes_df = pd.read_csv("./attributes/reduced-normalized-PSB-attributes.csv")
+    # # load SAMPLE MESH mesh
+    # test_mesh = "./psb-labeled-db/Armadillo/284.off"
+    # mesh = trimesh.load(test_mesh)
+    #
+    #
+    # '''SIMPLE 3D GLOBAL DESCRIPTORS of SAMPLE MESH'''
+    # area = mesh.area
+    # volume = mesh.volume
+    # aabb_volume = mesh.bounding_box_oriented.volume
+    # compactness = pow(area, 3) / pow(volume, 2)
+    #
+    # # scalar feature functions
+    # diameter = get_diameter(mesh)
+    # eccentricity = get_eccentricity(mesh)
+    #
+    # # define which database we are extracting features from here
+    NORM_PATH = "./normalized-psb-db/"
+    attributes_df = pd.read_csv("./attributes/normalized-PSB-attributes.csv")
     file2class, class2files = filename_to_class(attributes_df) # create dicts mapping filenames to categories
 
     # code below to check if any shape has holes
@@ -449,11 +451,14 @@ if __name__ == "__main__":
     """============EXTRACT FEATURES FORM DATABASE=========="""
 
     
-    EXTRACT_FEATURES = True
-    
-    if EXTRACT_FEATURES:
+    EXTRACT_SCALAR_FEATURES = False
+    EXTRACT_HIST_FEATURES = True
+
+    if EXTRACT_SCALAR_FEATURES:
         scalar_matrix = extract_scalar_features_from_db(NORM_PATH, to_csv=True, standardize = True)
-        # extract_hist_features_from_db(NORM_PATH, to_csv=True)
+
+    if EXTRACT_HIST_FEATURES:
+        extract_hist_features_from_db(NORM_PATH, to_csv=True)
     
     # checking feature extraction by picking some very different samples and showing that feat values are also very different
     scalar_df = pd.read_csv("./features/scalar_features.csv")
