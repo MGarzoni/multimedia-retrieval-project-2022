@@ -7,6 +7,8 @@ import copy
 from features_extraction import *
 from distance_metrics import *
 
+STANDARDIZATION_CSV = "./features/standardization_parameters.csv"
+
 """
 PIPELINE:
 - open GUI
@@ -31,25 +33,22 @@ PIPELINE:
 """
 
 # CALL GUI
-# USER LOADS IN QUERY MESH
-mesh_path = input("Paste path to query mesh from disk: ")
-mesh_path = str(mesh_path)
-
-STANDARDIZATION_CSV = "./features/standardization_parameters.csv"
+# USER LOADS IN QUERY MESH (for now just get a random mesh from test db)
+test_mesh_path = os.path.join("./test-db/", np.random.choice(os.listdir("./test-db/")))
 
 # CALL NORMALIZATION PIPELINE
-def normalize_mesh_from_path(mesh_path):
+def normalize_mesh_from_path(test_mesh_path):
 
-    print("Normalizing mesh...")
+    print("Normalizing query mesh...")
 
-    if mesh_path.endswith(('.ply', '.obj', '.off')):
+    if test_mesh_path.endswith(('.ply', '.obj', '.off')):
 
         # load mesh from path
-        norm_mesh = trimesh.load(mesh_path)
+        norm_mesh = trimesh.load(test_mesh_path)
 
         # extract attributes as a dict
-        raw_mesh_attributes = extract_attributes_from_mesh(norm_mesh, mesh_path)
-        print("\n\nImported new mesh. Initial RAW attributes:\n\n", raw_mesh_attributes)
+        raw_mesh_attributes = extract_attributes_from_mesh(norm_mesh, test_mesh_path)
+        # print("\n\nImported new mesh. Initial RAW attributes:\n\n", raw_mesh_attributes)
 
         ''' resampling '''
 
@@ -59,7 +58,6 @@ def normalize_mesh_from_path(mesh_path):
             # use mesh.subdivide() for resampling
             while len(norm_mesh.vertices) <= IS_OUT_LOW:
                 norm_mesh = norm_mesh.subdivide()
-                print("# vertices after subdivision:", len(norm_mesh.vertices))
 
         if raw_mesh_attributes['is_out_high']:
 
@@ -76,80 +74,108 @@ def normalize_mesh_from_path(mesh_path):
         
         # calculate attributes of NEW mesh.
         norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh, mesh_path = None) # the normalized mesh has no file path
-        print("\n\nNormalized mesh. New attributes:\n\n", norm_mesh_attributes)
+        # print("\n\nNormalized mesh. New attributes:\n\n", norm_mesh_attributes)
 
     return norm_mesh, norm_mesh_attributes
 
-# CALL FEATURE EXTRACTION
-norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
+norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(test_mesh_path)
 
-def extract_features(norm_mesh, verbose = False):
+
+# CALL FEATURE EXTRACTION
+def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
     """Extract features from a normalized mesh.
     Scalar features are standardized with respect to standardization parameters of database
     
     RETURNS: scalar features as dictionary, histogram features as one long vector"""
     
-    print("Extracting features from query object...")
+    print("Extracting features from query mesh...")
 
-    # extract scalar features as dictionary
-    scalar_feats = extract_scalar_features_single_mesh(norm_mesh, 
-                                                  standardization_parameters_csv = STANDARDIZATION_CSV,
-                                                  verbose = verbose)    
+    # # extract scalar features as dictionary
+    # scalar_feats = extract_scalar_features_single_mesh(norm_mesh, 
+    #                                               standardization_parameters_csv = STANDARDIZATION_CSV,
+    #                                               verbose = verbose)    
     
-    # extract histogram features as ONE LONG VECTOR!!! (should be same order as hist columns in .csv file)
-    hist_feats_vector = extract_hist_features_single_mesh(norm_mesh, 
-                                                          returntype = "vector",
-                                                          verbose = verbose)
+    # # extract histogram features as ONE LONG VECTOR!!! (should be same order as hist columns in .csv file)
+    # hist_feats_vector = extract_hist_features_single_mesh(norm_mesh, 
+    #                                                       returntype = "vector",
+    #                                                       verbose = verbose)
 
-    return scalar_feats, hist_feats_vector
+    #  now save these entries in the hist_bins dictionary
+    features = defaultdict(list)
+    features['filename'].append(norm_mesh_attributes['filename'])
+    features['category'].append(norm_mesh_attributes['category'])
 
-query_scalar_dict, query_hist_vector = extract_features(norm_mesh, verbose = True)
+    # append only the VALUES of the histogram, not the bins
+    # (these are assumed to be consistent)
+
+    scalar_features = extract_scalar_features_single_mesh(norm_mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
+    for key, value in scalar_features.items(): # append the new values to the scalar_features dictionary lists
+        features[key].append(value)
+
+    # calcualte the histograms for each feature as a dictionary
+    feature_hists = extract_hist_features_single_mesh(norm_mesh, returntype="dictionary")
+    for feature in hist_feature_methods.keys():
+        for i in range(BINS):
+            features[f"{feature}_{i}"].append(feature_hists[feature][i])
+
+    features = pd.DataFrame.from_dict(features, orient='columns')
+
+    return features
+
+query_feats = extract_features(norm_mesh, norm_mesh_attributes)
 
 # GET FEATURE VECTORS FROM ALL NORMALIZED DB
-db_feats = pd.read_csv("norm_db_features.csv") # THIS HAS TO BE CREATED
+db_feats = pd.read_csv("./features/features.csv")
 
 # COMPUTE QUERY FEATURE VECTOR DISTANCES FROM ALL REST OF OTHER VECTORS
-def compute_distances(query_feat_vector, db_feat_vectors):
+def compute_distances(query_feats, db_feats):
 
     print("Computing distances from query to rest of DB...")
 
+    # saving scalar and hist feat names
+    scalar_labels = ['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']
+    hist_labels = ['a3_0', 'a3_1', 'a3_2', 'a3_3', 'a3_4', 'a3_5', 'a3_6', 'a3_7', 'a3_8', 'a3_9',
+                     'd1_0', 'd1_1', 'd1_2', 'd1_3', 'd1_4', 'd1_5', 'd1_6', 'd1_7', 'd1_8', 'd1_9',
+                     'd2_0', 'd2_1', 'd2_2', 'd2_3', 'd2_4', 'd2_5', 'd2_6', 'd2_7', 'd2_8', 'd2_9',
+                     'd3_0', 'd3_1', 'd3_2', 'd3_3', 'd3_4', 'd3_5', 'd3_6', 'd3_7', 'd3_8', 'd3_9',
+                     'd4_0', 'd4_1', 'd4_2', 'd4_3', 'd4_4', 'd4_5', 'd4_6', 'd4_7', 'd4_8', 'd4_9']
+
+    # making copies of query and target vectors
+    query_scalar_copy = copy.deepcopy(query_feats[scalar_labels])
+    query_hist_copy = copy.deepcopy(query_feats[hist_labels])
+    db_scalar_copy = copy.deepcopy(db_feats[scalar_labels])
+    db_hist_copy = copy.deepcopy(db_feats[hist_labels])
+
     # define main distances dict holding required information
-    distances = {'filenames': [fname for fname in db_feat_vectors['filename']], 'all_distances': []}
+    distances = {'filenames': [fname for fname in db_feats['filename']], 'all_distances': []}
 
     # compute cosine distances on scalar features of query shape to the rest of shapes
-    for i in range(len(db_feat_vectors[['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']])):
-        target_scalar_vec = db_feat_vectors.loc[i]
-        dist = round(cosine_distance(query_feat_vector, target_scalar_vec), 3)
+    for i in range(len(db_feats[scalar_labels])):
+        target_scalar_vec = db_scalar_copy.loc[i]
+        dist = round(euclidean_distance(query_scalar_copy, target_scalar_vec), 4)
         distances['all_distances'].append(dist)
+    
+    query_hist_copy = np.asanyarray(query_hist_copy).reshape(50)
         
-    query_feat_vector = np.asanyarray(query_feat_vector).reshape(50)
-
     # compute EMD distances on hist features of query shape to the rest of shapes
     from scipy.stats import wasserstein_distance
-    for i in range(len(db_feat_vectors[['A3_0', 'A3_1', 'A3_2', 'A3_3', 'A3_4', 'A3_5', 'A3_6', 'A3_7', 'A3_8', 'A3_9',
-                                        'D1_0', 'D1_1', 'D1_2', 'D1_3', 'D1_4', 'D1_5', 'D1_6', 'D1_7', 'D1_8', 'D1_9',
-                                        'D2_0', 'D2_1', 'D2_2', 'D2_3', 'D2_4', 'D2_5', 'D2_6', 'D2_7', 'D2_8', 'D2_9',
-                                        'D3_0', 'D3_1', 'D3_2', 'D3_3', 'D3_4', 'D3_5', 'D3_6', 'D3_7', 'D3_8', 'D3_9',
-                                        'D4_0', 'D4_1', 'D4_2', 'D4_3', 'D4_4', 'D4_5', 'D4_6', 'D4_7', 'D4_8', 'D4_9']])):
-
-        target_hist_vec = np.asanyarray(db_feat_vectors.loc[i]).reshape(50)
-        dist = round(wasserstein_distance(query_feat_vector, target_hist_vec), 3)
+    for i in range(len(db_feats[hist_labels])):
+        target_hist_vec = np.asanyarray(db_hist_copy.loc[i]).reshape(50)
+        dist = round(wasserstein_distance(query_hist_copy, target_hist_vec), 4)
         distances['all_distances'].append(dist)
         
     # sort distances from low to high before returning
-    # HERE WE ACTUALLY ALSO WANT TO SORT THE FILENAMES (I.E. KEEP THEIR REFERENCE TO THE SHAPES)
-    # OTHERWISE WE CAN'T DISPLAY THEM AFTER
-    # BUT CAN'T JUST SORT ALSO THE FILENAME KEY IN THE DICT CAUSE THAT WOULD BE BASED ON ANOTHER CRITERIA (E.G. ALPHABETICAL)
     distances['all_distances'] = sorted(distances['all_distances'])
     
     return distances
 
-# SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
 distances = compute_distances(query_feats, db_feats)
 
+
+# SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
 # get k=5 best-matching shapes (the 5 lowest distances)
 k_best_matches = [(fname, dist) for fname, dist in zip(distances['filenames'][:5], distances['all_distances'][:5])]
-print(f"These are the k=5 best matches:\n{k_best_matches}\n")
+print(f"\n== RETRIEVAL OUPUT ==\nThese are the k=5 best matches:\n{k_best_matches}")
 
 # DISPLAY MESHES IN GUI
 
