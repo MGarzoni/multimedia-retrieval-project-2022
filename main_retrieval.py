@@ -124,17 +124,17 @@ def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
 
     features = pd.DataFrame.from_dict(features, orient='columns')
     
-    if verbose: print("\n\nFeatures of query mesh:\n\n", features)
+    if verbose: print("\n\nFeatures of query mesh:\n\n", type(features), features)
 
     return features
 
-query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = True)
+query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = False)
 
 # GET FEATURE VECTORS FROM ALL NORMALIZED DB
 db_feats = pd.read_csv("./features/features.csv")
 
 # COMPUTE QUERY FEATURE VECTOR DISTANCES FROM ALL REST OF OTHER VECTORS
-def compute_distances(query_feats, db_feats):
+def compute_distances(query_feats, db_feats, verbose = False):
 
     print("Computing distances from query to rest of DB...")
 
@@ -151,6 +151,8 @@ def compute_distances(query_feats, db_feats):
     query_hist_copy = copy.deepcopy(query_feats[hist_labels])
     db_scalar_copy = copy.deepcopy(db_feats[scalar_labels])
     db_hist_copy = copy.deepcopy(db_feats[hist_labels])
+    
+    if verbose: print(f"Query scalar features: {query_scalar_copy}\n\nQuery hist: {query_hist_copy}")
 
     # define main distances dict holding required information
     distances = {'filenames': [fname for fname in db_feats['filename']], 'all_distances': []}
@@ -159,23 +161,24 @@ def compute_distances(query_feats, db_feats):
     for i in range(len(db_feats[scalar_labels])):
         target_scalar_vec = db_scalar_copy.loc[i]
         dist = round(euclidean_distance(query_scalar_copy, target_scalar_vec), 4)
-        distances['all_distances'].append(dist)
+        distances['all_distances'] = dist
+        if verbose: print(f"Distance to {target_scalar_vec} ::: {dist}")
     
-    query_hist_copy = np.asanyarray(query_hist_copy).reshape(50)
+    query_hist_copy = np.asanyarray(query_hist_copy).reshape(50) #turn histogram dataframe into vector
         
     # compute EMD distances on hist features of query shape to the rest of shapes
     from scipy.stats import wasserstein_distance
     for i in range(len(db_feats[hist_labels])):
         target_hist_vec = np.asanyarray(db_hist_copy.loc[i]).reshape(50)
         dist = round(wasserstein_distance(query_hist_copy, target_hist_vec), 4)
-        distances['all_distances'].append(dist)
+        distances['all_distances'] = dist
         
     # sort distances from low to high before returning
     distances['all_distances'] = sorted(distances['all_distances'])
     
     return distances
 
-distances = compute_distances(query_feats, db_feats)
+distances = compute_distances(query_feats, db_feats, verbose = True)
 
 
 # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
