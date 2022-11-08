@@ -169,9 +169,31 @@ def compute_distances(query_feats, db_feats, verbose = False):
         
     # sort distances from low to high before returning
     distances = pd.DataFrame.from_dict(distances)
-    print(distances)
+    if verbose: print(distances)
     
     return distances
+
+
+def run_query(mesh_path, features_csv):
+    norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
+    query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = False)
+    
+    # GET FEATURE VECTORS FROM ALL NORMALIZED DB
+    db_feats = pd.read_csv(features_csv)
+    
+    dist_df = compute_distances(query_feats, db_feats, verbose = False)
+    
+    dist_df = dist_df.sort_values(by="scalar_dist", ascending=True)
+    
+    # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
+    # get k=5 best-matching shapes (the 5 lowest distances)
+    k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['scalar_dist'][:5])]
+    
+    
+    return (
+        f"\n== RETRIEVAL OUPUT ==\nThese are the k=5 best matches:\n{k_best_matches}", 
+            norm_mesh
+            )
 
 
 
@@ -182,20 +204,9 @@ if __name__ == "__main__":
     # USER LOADS IN QUERY MESH (for now just get a random mesh from test db)
     test_mesh_path = os.path.join("./test-db/", np.random.choice(os.listdir("./test-db/")))
     
-    norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(test_mesh_path)
-    query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = False)
+    run_query(test_mesh_path, "./features/features.csv")
     
-    # GET FEATURE VECTORS FROM ALL NORMALIZED DB
-    db_feats = pd.read_csv("./features/features.csv")
     
-    dist_df = compute_distances(query_feats, db_feats, verbose = False)
-    
-    dist_df = dist_df.sort_values(by="scalar_dist", ascending=True)
-    
-    # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
-    # get k=5 best-matching shapes (the 5 lowest distances)
-    k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['scalar_dist'][:5])]
-    print(f"\n== RETRIEVAL OUPUT ==\nThese are the k=5 best matches:\n{k_best_matches}")
     
     # DISPLAY MESHES IN GUI
 

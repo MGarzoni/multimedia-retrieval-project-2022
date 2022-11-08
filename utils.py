@@ -8,6 +8,9 @@ import seaborn as sns
 from math import sqrt
 from ast import literal_eval
 from collections import defaultdict
+import pyrender
+    
+from PIL import Image
 
 # corners of image, array used for visually consistent png export of meshes
 CORNERS = [[-0.75, -0.75, -0.75],
@@ -106,7 +109,7 @@ def save_mesh_png(mesh, filename, corners = None):
     scene.add_geometry(trimesh.creation.axis(axis_length = 1)) # add x, y, z axes to scene
 
     if corners is None: # add corners
-        corners = scene.bounds_corners
+        corners = scene.bounds
     
     # set 45 degree view so all axes are visible
     r_e = trimesh.transformations.euler_matrix(
@@ -126,17 +129,47 @@ def save_mesh_png(mesh, filename, corners = None):
     with open("./pics/"+filename+".png", 'wb') as f:
         f.write(png)
         f.close()
-
-def save_image_of_path(path, tag=None):
-    """Save shape at path to .png, with tag added after underscore"""
-
-    mesh = trimesh.load(path)
-    file_name = os.path.basename(path)
+        
+def mesh_to_PIL_img(mesh):
+    """SIMPLE SOLUTION USING PYRENDER
+    Returns PIL image object
     
-    if tag != None: # add tag to filename if one is given
-        file_name = file_name + "_" + tag
     
-    save_mesh_png(mesh, file_name)
+    Using code from https://stackoverflow.com/questions/43724600/rendering-a-3d-mesh-into-an-image-using-python
+    """
+    
+    
+    scene = pyrender.Scene.from_trimesh_scene(mesh.scene())
+
+    mesh = pyrender.Mesh.from_trimesh(mesh, smooth=False)
+
+    camera = pyrender.PerspectiveCamera( yfov=np.pi / 3.0)
+
+    c = 2**-0.5
+    scene.add(camera, pose=[[ 1,  0,  0,  0],
+                            [ 0,  c, -c, -2],
+                            [ 0,  c,  c,  2],
+                            [ 0,  0,  0,  1]])
+
+    # render scene
+    r = pyrender.OffscreenRenderer(512, 512)
+    color, _ = r.render(scene)
+
+    img = Image.fromarray(color)
+    
+    return img
+
+
+# def save_image_of_path(path, tag=None):
+#     """Save shape at path to .png, with tag added after underscore"""
+
+#     mesh = trimesh.load(path)
+#     file_name = os.path.basename(path)
+    
+#     if tag != None: # add tag to filename if one is given
+#         file_name = file_name + "_" + tag
+    
+#     save_mesh_png(mesh, file_name)
     
 def before_after(mesh1, mesh2, corners = None):
     """Save "before.png" and "after.png" with two meshes;
