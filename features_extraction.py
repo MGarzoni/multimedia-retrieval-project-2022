@@ -337,6 +337,66 @@ def extract_hist_features_from_db(root, to_csv=False):
 
     return hist_features_matrix
 
+def extract_features_db(root, to_csv=False, standardize = False):
+    '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
+    and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
+
+    from tqdm import tqdm
+
+    # this dict will hold the feature histograms, bin by bin
+    feature_list = defaultdict(list)
+
+    for category in tqdm(os.listdir(root)):
+        for file in os.listdir(os.path.join(root, category)):
+            mesh = trimesh.load(os.path.join(root, category, file))
+
+            #  now save these entries in the hist_bins dictionary
+            feature_list['filename'].append(file)
+            feature_list['category'].append(category)
+
+            # append only the VALUES of the histogram, not the bins
+            # (these are assumed to be consistent)
+
+            scalar_features = extract_scalar_features_single_mesh(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
+            for key, value in scalar_features.items(): # append the new values to the scalar_features dictionary lists
+                feature_list[key].append(value)
+
+            # calcualte the histograms for each feature as a dictionary
+            feature_hists = extract_hist_features_single_mesh(mesh,
+                                                              returntype="dictionary")
+            for feature in hist_feature_methods.keys():
+                for i in range(BINS):
+                    feature_list[f"{feature}_{i}"].append(feature_hists[feature][i])
+
+            print(f"processed {file}")
+
+    # construct df holding feat values
+    features_matrix = pd.DataFrame.from_dict(feature_list)
+
+    if standardize:
+        standardization_dict = {"feature":[], "mean":[], "std":[]}
+        features_to_standardize = ["area", "volume", "aabb_volume",
+                        "compactness", "diameter", "eccentricity"]
+        for feature in features_to_standardize:
+
+            # STANDARDIZE EACH FEATURE'S COLUMN
+            features_matrix[feature], mean, std = standardize_column(features_matrix[feature])
+
+            # SAVE STANDARDIZATION PARAMETERS
+            standardization_dict["feature"].append(feature)
+            standardization_dict["mean"].append(mean)
+            standardization_dict["std"].append(std)
+
+
+    # export to csv
+    # (STANDARDIZATION PARAMETERS EXPORTED too)
+    if to_csv:
+        features_matrix.to_csv('./features/features.csv')
+        if standardize:
+            pd.DataFrame.from_dict(standardization_dict).to_csv('./features/standardization_parameters.csv')
+
+    return features_matrix
+
 def extract_hist_features_single_mesh(mesh, 
                                       returntype = "dictionary",
                                       verbose = False):
@@ -493,14 +553,16 @@ if __name__ == "__main__":
     """============EXTRACT FEATURES FORM DATABASE=========="""
 
     
-    EXTRACT_SCALAR_FEATURES = False
-    EXTRACT_HIST_FEATURES = True
+    # EXTRACT_SCALAR_FEATURES = False
+    # EXTRACT_HIST_FEATURES = True
+    #
+    # if EXTRACT_SCALAR_FEATURES:
+    #     scalar_matrix = extract_scalar_features_from_db(NORM_PATH, to_csv=True, standardize = True)
+    #
+    # if EXTRACT_HIST_FEATURES:
+    #     extract_hist_features_from_db(NORM_PATH, to_csv=True)
 
-    if EXTRACT_SCALAR_FEATURES:
-        scalar_matrix = extract_scalar_features_from_db(NORM_PATH, to_csv=True, standardize = True)
-
-    if EXTRACT_HIST_FEATURES:
-        extract_hist_features_from_db(NORM_PATH, to_csv=True)
+    extract_features_db(NORM_PATH, to_csv=True, standardize=True)
     
     report = reporting.FeatureReport(hist_df)
     report.save('feature_plots')
