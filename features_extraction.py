@@ -282,11 +282,11 @@ def extract_scalar_features_single_mesh(mesh, standardization_parameters_csv = N
                                        "std":row["std"]} for _, row in params_df.iterrows()}
         if verbose: 
             print("\n\nScalar features before standardization:\n", scalar_features)
-            print("\n\n Loaded standardization parameters:\n", params_dict)
+            print("\n\nLoaded standardization parameters:\n", params_dict)
         
         # apply standardization parameters to respective features in scalar_features dicitonary
         for feature in scalar_features.keys():
-            scalar_features[feature] = standardize_value(scalar_features[feature], 
+            scalar_features[feature] = standardize_single_value(scalar_features[feature], 
                                                          params_dict[feature]["mean"], 
                                                          params_dict[feature]["std"])
         if verbose: print("\n\nScalar features AFTER standardization:\n", scalar_features)
@@ -375,12 +375,12 @@ def standardize_column(column, mean=None, std=None):
     
     newcolumn = []
     for value in column:
-        newcolumn.append(standardize_value(value, mean, std, verbose = False))
+        newcolumn.append(standardize_single_value(value, mean, std, verbose = False))
     
     return newcolumn, mean, std
     
 
-def standardize_value(value, mean, std, verbose = True):
+def standardize_single_value(value, mean, std, verbose = True):
     """Standardize a single vanue given a mean and std
     CENTERED at 0.5 and most values will be within [0,1]"""
     standardized = (0.5 + (value-mean)/(7*std)) #distance from 0 to 1 should be n standard deviations
