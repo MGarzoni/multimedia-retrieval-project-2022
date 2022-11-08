@@ -214,17 +214,18 @@ def extract_scalar_features_from_db(root, to_csv=False, standardize = False):
     # initialize dictionary holding feature values
     scalar_features = defaultdict(list)
 
-    for file in tqdm(os.listdir(root)):
-        mesh = trimesh.load(root + file)
-        scalar_features['filename'].append(file)
-        scalar_features['category'].append(file2class[file])
-        
-        
-        # calculate features and put into dictionary
-        # do NOT standardize yet!!!! this is done on the column as a whole
-        new_object_features = extract_scalar_features_single_mesh(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
-        for key, value in new_object_features.items(): # append the new values to the scalar_features dictionary lists
-            scalar_features[key].append(value)
+    for category in tqdm(os.listdir(root)):
+        for file in os.listdir(os.path.join(root, category)):
+            mesh = trimesh.load(os.path.join(root, category, file))
+            scalar_features['filename'].append(file)
+            # scalar_features['category'].append(file2class[file])
+            scalar_features['category'].append(category)
+
+            # calculate features and put into dictionary
+            # do NOT standardize yet!!!! this is done on the column as a whole
+            new_object_features = extract_scalar_features_single_mesh(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
+            for key, value in new_object_features.items(): # append the new values to the scalar_features dictionary lists
+                scalar_features[key].append(value)
 
         # print(f"processed {file}")
         
@@ -305,25 +306,26 @@ def extract_hist_features_from_db(root, to_csv=False):
     hist_bins = defaultdict(list)
 
 
-    for file in tqdm(os.listdir(root)):
-        mesh = trimesh.load(root + file)
+    for category in tqdm(os.listdir(root)):
+        for file in os.listdir(os.path.join(root, category)):
+            mesh = trimesh.load(os.path.join(root, category, file))
 
-        # append only the VALUES of the histogram, not the bins
-        # (these are assumed to be consistent)
-    
-        
-        # calcualte the histograms for each feature as a dictionary
-        feature_hists = extract_hist_features_single_mesh(mesh, 
-                                                          returntype = "dictionary")
-        
-        #  now save these entries in the hist_bins dictionary
-        hist_bins['filename'].append(file)
-        hist_bins['category'].append(file2class[file])
-        for feature in hist_feature_methods.keys():
-            for i in range(BINS):
-                hist_bins[f"{feature}_{i}"].append(feature_hists[feature][i])
+            # append only the VALUES of the histogram, not the bins
+            # (these are assumed to be consistent)
 
-        print(f"processed {file}")
+
+            # calcualte the histograms for each feature as a dictionary
+            feature_hists = extract_hist_features_single_mesh(mesh,
+                                                              returntype = "dictionary")
+
+            #  now save these entries in the hist_bins dictionary
+            hist_bins['filename'].append(file)
+            hist_bins['category'].append(category)
+            for feature in hist_feature_methods.keys():
+                for i in range(BINS):
+                    hist_bins[f"{feature}_{i}"].append(feature_hists[feature][i])
+
+            print(f"processed {file}")
         
     # construct df holding feat values
     hist_features_matrix = pd.DataFrame.from_dict(hist_bins)
@@ -334,6 +336,66 @@ def extract_hist_features_from_db(root, to_csv=False):
         hist_features_matrix.to_csv('./features/hist_features.csv')
 
     return hist_features_matrix
+
+def extract_features_db(root, to_csv=False, standardize = False):
+    '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
+    and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
+
+    from tqdm import tqdm
+
+    # this dict will hold the feature histograms, bin by bin
+    feature_list = defaultdict(list)
+
+    for category in tqdm(os.listdir(root)):
+        for file in os.listdir(os.path.join(root, category)):
+            mesh = trimesh.load(os.path.join(root, category, file))
+
+            #  now save these entries in the hist_bins dictionary
+            feature_list['filename'].append(file)
+            feature_list['category'].append(category)
+
+            # append only the VALUES of the histogram, not the bins
+            # (these are assumed to be consistent)
+
+            scalar_features = extract_scalar_features_single_mesh(mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
+            for key, value in scalar_features.items(): # append the new values to the scalar_features dictionary lists
+                feature_list[key].append(value)
+
+            # calcualte the histograms for each feature as a dictionary
+            feature_hists = extract_hist_features_single_mesh(mesh,
+                                                              returntype="dictionary")
+            for feature in hist_feature_methods.keys():
+                for i in range(BINS):
+                    feature_list[f"{feature}_{i}"].append(feature_hists[feature][i])
+
+            print(f"processed {file}")
+
+    # construct df holding feat values
+    features_matrix = pd.DataFrame.from_dict(feature_list)
+
+    if standardize:
+        standardization_dict = {"feature":[], "mean":[], "std":[]}
+        features_to_standardize = ["area", "volume", "aabb_volume",
+                        "compactness", "diameter", "eccentricity"]
+        for feature in features_to_standardize:
+
+            # STANDARDIZE EACH FEATURE'S COLUMN
+            features_matrix[feature], mean, std = standardize_column(features_matrix[feature])
+
+            # SAVE STANDARDIZATION PARAMETERS
+            standardization_dict["feature"].append(feature)
+            standardization_dict["mean"].append(mean)
+            standardization_dict["std"].append(std)
+
+
+    # export to csv
+    # (STANDARDIZATION PARAMETERS EXPORTED too)
+    if to_csv:
+        features_matrix.to_csv('./features/features.csv')
+        if standardize:
+            pd.DataFrame.from_dict(standardization_dict).to_csv('./features/standardization_parameters.csv')
+
+    return features_matrix
 
 def extract_hist_features_single_mesh(mesh, 
                                       returntype = "dictionary",
@@ -406,30 +468,72 @@ def categories_visualize(hist_df):
     # create another dictionary in this py file that holds the bins for all these histograms
     # use those bins to graph the histograms, one graph per class
     # then put the graphs in a nice grid
-    
+    pass
+
+
+
+""" Checking feature extraction by picking some very different samples
+and showing that feat values are also very different """
+
+# scalar_df = pd.read_csv("./features/scalar_features.csv")
+# hist_df = pd.read_csv('./features/hist_features.csv')
+# hist_df.columns
+# scalar_labels = ['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']
+# hist_labels = ['a3_0', 'a3_1', 'a3_2', 'a3_3',
+#        'a3_4', 'a3_5', 'a3_6', 'a3_7', 'a3_8', 'a3_9', 'd1_0', 'd1_1', 'd1_2',
+#        'd1_3', 'd1_4', 'd1_5', 'd1_6', 'd1_7', 'd1_8', 'd1_9', 'd2_0', 'd2_1',
+#        'd2_2', 'd2_3', 'd2_4', 'd2_5', 'd2_6', 'd2_7', 'd2_8', 'd2_9', 'd3_0',
+#        'd3_1', 'd3_2', 'd3_3', 'd3_4', 'd3_5', 'd3_6', 'd3_7', 'd3_8', 'd3_9',
+#        'd4_0', 'd4_1', 'd4_2', 'd4_3', 'd4_4', 'd4_5', 'd4_6', 'd4_7', 'd4_8',
+#        'd4_9']
+
+# eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
+# eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+# non_eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
+# non_eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+
+# fig, axs = plt.subplots(2, 2)
+# # fig.suptitle('Comparison of scalar feature values of two airplanes (right) and two cups (left)')
+# axs[0, 0].bar(scalar_labels, eccentric_example_0)
+# axs[0, 0].tick_params(labelrotation=90)
+# axs[0, 0].set_title('Airplane 1')
+# axs[0, 1].bar(scalar_labels, non_eccentric_example_0)
+# axs[0, 1].tick_params(labelrotation=90)
+# axs[0, 1].set_title('Cup 1')
+# axs[1, 0].bar(scalar_labels, eccentric_example_1)
+# axs[1, 0].tick_params(labelrotation=90)
+# axs[1, 0].set_title('Airplane 2')
+# axs[1, 1].bar(scalar_labels, non_eccentric_example_1)
+# axs[1, 1].tick_params(labelrotation=90)
+# axs[1, 1].set_title('Cup 2')
+# for ax in axs.flat:
+#     ax.label_outer()
+# plt.show()
+
+
 # Code below will not run if we are only importing
 if __name__ == "__main__":
     
     """============Loading and extracting features from sample mesh==============="""
     
-    # load SAMPLE MESH mesh
-    test_mesh = "./psb-labeled-db/Armadillo/284.off"
-    mesh = trimesh.load(test_mesh)
-    
-    
-    '''SIMPLE 3D GLOBAL DESCRIPTORS of SAMPLE MESH'''
-    area = mesh.area
-    volume = mesh.volume
-    aabb_volume = mesh.bounding_box_oriented.volume
-    compactness = pow(area, 3) / pow(volume, 2)
-    
-    # scalar feature functions
-    diameter = get_diameter(mesh)
-    eccentricity = get_eccentricity(mesh)
-
-    # define which database we are extracting features from here
-    NORM_PATH = "./reduced-normalized-psb-db/"
-    attributes_df = pd.read_csv("./attributes/reduced-normalized-PSB-attributes.csv")
+    # # load SAMPLE MESH mesh
+    # test_mesh = "./psb-labeled-db/Armadillo/284.off"
+    # mesh = trimesh.load(test_mesh)
+    #
+    #
+    # '''SIMPLE 3D GLOBAL DESCRIPTORS of SAMPLE MESH'''
+    # area = mesh.area
+    # volume = mesh.volume
+    # aabb_volume = mesh.bounding_box_oriented.volume
+    # compactness = pow(area, 3) / pow(volume, 2)
+    #
+    # # scalar feature functions
+    # diameter = get_diameter(mesh)
+    # eccentricity = get_eccentricity(mesh)
+    #
+    # # define which database we are extracting features from here
+    NORM_PATH = "./normalized-psb-db/"
+    attributes_df = pd.read_csv("./attributes/normalized-PSB-attributes.csv")
     file2class, class2files = filename_to_class(attributes_df) # create dicts mapping filenames to categories
 
     # code below to check if any shape has holes
@@ -449,23 +553,16 @@ if __name__ == "__main__":
     """============EXTRACT FEATURES FORM DATABASE=========="""
 
     
-    EXTRACT_FEATURES = True
-    
-    if EXTRACT_FEATURES:
-        scalar_matrix = extract_scalar_features_from_db(NORM_PATH, to_csv=True, standardize = True)
-        # extract_hist_features_from_db(NORM_PATH, to_csv=True)
-    
-    # checking feature extraction by picking some very different samples and showing that feat values are also very different
-    scalar_df = pd.read_csv("./features/scalar_features.csv")
-    hist_df = pd.read_csv('./features/hist_features.csv')
-    
-    eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
-    eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
-    non_eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
-    non_eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
-    
-    eccentric_example_0.plot(title='Airplane 0', kind='bar')
-    non_eccentric_example_0.plot(title='Cup 0', kind='bar')
+    # EXTRACT_SCALAR_FEATURES = False
+    # EXTRACT_HIST_FEATURES = True
+    #
+    # if EXTRACT_SCALAR_FEATURES:
+    #     scalar_matrix = extract_scalar_features_from_db(NORM_PATH, to_csv=True, standardize = True)
+    #
+    # if EXTRACT_HIST_FEATURES:
+    #     extract_hist_features_from_db(NORM_PATH, to_csv=True)
+
+    extract_features_db(NORM_PATH, to_csv=True, standardize=True)
     
     report = reporting.FeatureReport(hist_df)
     report.save('feature_plots')
