@@ -408,7 +408,49 @@ def categories_visualize(hist_df):
     # create another dictionary in this py file that holds the bins for all these histograms
     # use those bins to graph the histograms, one graph per class
     # then put the graphs in a nice grid
-    
+    pass
+
+
+
+""" Checking feature extraction by picking some very different samples
+and showing that feat values are also very different """
+
+scalar_df = pd.read_csv("./features/scalar_features.csv")
+hist_df = pd.read_csv('./features/hist_features.csv')
+hist_df.columns
+scalar_labels = ['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']
+hist_labels = ['a3_0', 'a3_1', 'a3_2', 'a3_3',
+       'a3_4', 'a3_5', 'a3_6', 'a3_7', 'a3_8', 'a3_9', 'd1_0', 'd1_1', 'd1_2',
+       'd1_3', 'd1_4', 'd1_5', 'd1_6', 'd1_7', 'd1_8', 'd1_9', 'd2_0', 'd2_1',
+       'd2_2', 'd2_3', 'd2_4', 'd2_5', 'd2_6', 'd2_7', 'd2_8', 'd2_9', 'd3_0',
+       'd3_1', 'd3_2', 'd3_3', 'd3_4', 'd3_5', 'd3_6', 'd3_7', 'd3_8', 'd3_9',
+       'd4_0', 'd4_1', 'd4_2', 'd4_3', 'd4_4', 'd4_5', 'd4_6', 'd4_7', 'd4_8',
+       'd4_9']
+
+eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
+eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+non_eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
+non_eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
+
+fig, axs = plt.subplots(2, 2)
+# fig.suptitle('Comparison of scalar feature values of two airplanes (right) and two cups (left)')
+axs[0, 0].bar(scalar_labels, eccentric_example_0)
+axs[0, 0].tick_params(labelrotation=90)
+axs[0, 0].set_title('Airplane 1')
+axs[0, 1].bar(scalar_labels, non_eccentric_example_0)
+axs[0, 1].tick_params(labelrotation=90)
+axs[0, 1].set_title('Cup 1')
+axs[1, 0].bar(scalar_labels, eccentric_example_1)
+axs[1, 0].tick_params(labelrotation=90)
+axs[1, 0].set_title('Airplane 2')
+axs[1, 1].bar(scalar_labels, non_eccentric_example_1)
+axs[1, 1].tick_params(labelrotation=90)
+axs[1, 1].set_title('Cup 2')
+for ax in axs.flat:
+    ax.label_outer()
+plt.show()
+
+
 # Code below will not run if we are only importing
 if __name__ == "__main__":
     
@@ -459,18 +501,6 @@ if __name__ == "__main__":
 
     if EXTRACT_HIST_FEATURES:
         extract_hist_features_from_db(NORM_PATH, to_csv=True)
-    
-    # checking feature extraction by picking some very different samples and showing that feat values are also very different
-    scalar_df = pd.read_csv("./features/scalar_features.csv")
-    hist_df = pd.read_csv('./features/hist_features.csv')
-    
-    eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
-    eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Airplane'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
-    non_eccentric_example_0 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[0].drop(['Unnamed: 0', 'filename', 'category'])
-    non_eccentric_example_1 = scalar_df.loc[scalar_df['category'] == 'Cup'].iloc[1].drop(['Unnamed: 0', 'filename', 'category'])
-    
-    eccentric_example_0.plot(title='Airplane 0', kind='bar')
-    non_eccentric_example_0.plot(title='Cup 0', kind='bar')
     
     report = reporting.FeatureReport(hist_df)
     report.save('feature_plots')
