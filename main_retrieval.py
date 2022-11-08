@@ -73,7 +73,9 @@ def normalize_mesh_from_path(test_mesh_path):
         norm_mesh = normalize_mesh(norm_mesh)
         
         # calculate attributes of NEW mesh.
-        norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh, mesh_path = None) # the normalized mesh has no file path
+        norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh, 
+                                                            mesh_path = None, 
+                                                            filename = raw_mesh_attributes["filename"]+"_(normalized)") # the normalized mesh has no file path
         # print("\n\nNormalized mesh. New attributes:\n\n", norm_mesh_attributes)
 
     return norm_mesh, norm_mesh_attributes
@@ -104,6 +106,8 @@ def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
     features = defaultdict(list)
     features['filename'].append(norm_mesh_attributes['filename'])
     features['category'].append(norm_mesh_attributes['category'])
+    print(features)
+    
 
     # append only the VALUES of the histogram, not the bins
     # (these are assumed to be consistent)
@@ -119,10 +123,12 @@ def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
             features[f"{feature}_{i}"].append(feature_hists[feature][i])
 
     features = pd.DataFrame.from_dict(features, orient='columns')
+    
+    if verbose: print("\n\nFeatures of query mesh:\n\n", features)
 
     return features
 
-query_feats = extract_features(norm_mesh, norm_mesh_attributes)
+query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = True)
 
 # GET FEATURE VECTORS FROM ALL NORMALIZED DB
 db_feats = pd.read_csv("./features/features.csv")
