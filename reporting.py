@@ -130,7 +130,7 @@ class FeatureReport:
                     # Get the class
                     shape_class = shape_classes[i]
 
-                    # Get the features
+                    # Get all faeture values matching the feature name (so all the bins of the feature)
                     shape_features = self.data[self.data['category'] == shape_class].filter(like=key, axis=1)
 
                     # Recalculate the bins

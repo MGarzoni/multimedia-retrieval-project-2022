@@ -1,6 +1,6 @@
 from utils import *
 from reporting import ShapeReport as report
-import open3d
+# import open3d
 
 def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
     """This function takes a database, iteratively gets a shape from a category and
@@ -96,13 +96,13 @@ original_psb_csv = "./attributes/original-PSB-attributes.csv"
 out_dir = "./normalized-psb-db"
 out_csv = "./attributes/normalized-PSB-attributes.csv"
 
-NORMALIZE = True # set to true to re-do normalization
-UPDATE_CSV = True # set to true to re-update attributes CSV files for both before and after normalization
+NORMALIZE = False # set to true to re-do normalization
+UPDATE_CSV = False # set to true to re-update attributes CSV files for both before and after normalization
 
 if NORMALIZE:
     normalize_db(database=PSB_PATH, original_csv=original_psb_csv, out_dir=out_dir, out_csv=out_csv)
 
-if UPDATE_CSV:
+if UPDATE_CSV: # since normalization includes CSV, we should not RE update it
     # update csv's if necessary
     update_csv(PSB_PATH, original_psb_csv, flat_dir=False)
     update_csv(out_dir, out_csv, flat_dir = True)
