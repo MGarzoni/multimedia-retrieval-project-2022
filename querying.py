@@ -14,11 +14,11 @@ query_image = None
 
 # place here whatever we want in the window
 layout = [  [sg.Text('Upload query mesh from disk')], 
-          [sg.FileBrowse('FileBrowse', file_types=['.ply', '.obj', '.off'], target='-file-')],
-          [sg.InputText(key='-file-')],
+            [sg.FileBrowse('FileBrowse', file_types=['.ply', '.obj', '.off'], target = '-file-')],
+            [sg.InputText(key = '-file-')],
             [sg.Button('Load query'), sg.Button('Cancel (close window)')],
             [sg.Image(key = "-IMAGE-", size = (300,300))],
-            ]
+        ]
 
 # create the GUI window
 window = sg.Window('MultiPlayer', layout)
@@ -47,5 +47,3 @@ while True:
     print('You loaded ', values["-file-"])
 
 window.close()
-
-#####

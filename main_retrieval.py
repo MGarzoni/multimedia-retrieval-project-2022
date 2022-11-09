@@ -33,7 +33,6 @@ PIPELINE:
 """
 
 
-
 # CALL NORMALIZATION PIPELINE
 def normalize_mesh_from_path(test_mesh_path):
 
@@ -64,7 +63,6 @@ def normalize_mesh_from_path(test_mesh_path):
             while len(norm_mesh.vertices) >= IS_OUT_HIGH:
                 norm_mesh = norm_mesh.simplify_quadratic_decimation(17500)
 
-
         ''' normalization '''
 
         # translate mesh to origin (with center_at_origin function from utils) (here bounds value changes)
@@ -79,7 +77,6 @@ def normalize_mesh_from_path(test_mesh_path):
     return norm_mesh, norm_mesh_attributes
 
 
-
 # CALL FEATURE EXTRACTION
 def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
     """Extract features from a normalized mesh.
@@ -89,22 +86,11 @@ def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
     
     print("Extracting features from query mesh...")
 
-    # # extract scalar features as dictionary
-    # scalar_feats = extract_scalar_features_single_mesh(norm_mesh, 
-    #                                               standardization_parameters_csv = STANDARDIZATION_CSV,
-    #                                               verbose = verbose)    
-    
-    # # extract histogram features as ONE LONG VECTOR!!! (should be same order as hist columns in .csv file)
-    # hist_feats_vector = extract_hist_features_single_mesh(norm_mesh, 
-    #                                                       returntype = "vector",
-    #                                                       verbose = verbose)
-
     #  now save these entries in the hist_bins dictionary
     features = defaultdict(list)
     features['filename'].append(norm_mesh_attributes['filename'])
     features['category'].append(norm_mesh_attributes['category'])
     print(features)
-    
 
     # append only the VALUES of the histogram, not the bins
     # (these are assumed to be consistent)
@@ -124,7 +110,6 @@ def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
     if verbose: print("\n\nFeatures of query mesh:\n\n", type(features), features)
 
     return features
-
 
 
 # COMPUTE QUERY FEATURE VECTOR DISTANCES FROM ALL REST OF OTHER VECTORS
@@ -196,8 +181,6 @@ def run_query(mesh_path, features_csv):
             )
 
 
-
-
 if __name__ == "__main__":
 
     # CALL GUI
@@ -206,8 +189,4 @@ if __name__ == "__main__":
     
     run_query(test_mesh_path, "./features/features.csv")
     
-    
-    
     # DISPLAY MESHES IN GUI
-
-
