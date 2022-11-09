@@ -109,7 +109,7 @@ def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
     # append only the VALUES of the histogram, not the bins
     # (these are assumed to be consistent)
 
-    scalar_features = extract_scalar_features_single_mesh(norm_mesh, standardization_parameters_csv=None) # this returns a dict of features for the mesh
+    scalar_features = extract_scalar_features_single_mesh(norm_mesh, standardization_parameters_csv=STANDARDIZATION_CSV) # this returns a dict of features for the mesh
     for key, value in scalar_features.items(): # append the new values to the scalar_features dictionary lists
         features[key] = (value)
 
@@ -141,8 +141,8 @@ def compute_distances(query_feats, db_feats, verbose = False):
                      'd4_0', 'd4_1', 'd4_2', 'd4_3', 'd4_4', 'd4_5', 'd4_6', 'd4_7', 'd4_8', 'd4_9']
 
     # making copies of query and target vectors
-    query_scalar_copy = copy.deepcopy(query_feats[scalar_labels])
-    query_hist_copy = copy.deepcopy(query_feats[hist_labels])
+    query_scalar_copy = copy.deepcopy(query_feats[scalar_labels]).loc[0]
+    query_hist_copy = copy.deepcopy(query_feats[hist_labels]).loc[0]
     db_scalar_copy = copy.deepcopy(db_feats[scalar_labels])
     db_hist_copy = copy.deepcopy(db_feats[hist_labels])
     
@@ -156,7 +156,6 @@ def compute_distances(query_feats, db_feats, verbose = False):
         target_scalar_vec = db_scalar_copy.loc[i]
         dist = round(euclidean_distance(query_scalar_copy, target_scalar_vec), 4)
         distances['scalar_dist'].append(dist)
-        if verbose: print(f"Distance to {target_scalar_vec} ::: {dist}")
     
     query_hist_copy = np.asanyarray(query_hist_copy).reshape(50) #turn histogram dataframe into vector
         
@@ -177,22 +176,20 @@ def compute_distances(query_feats, db_feats, verbose = False):
 def run_query(mesh_path, features_csv):
     norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
     query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = False)
+    print("QUERY FEATURES", query_feats.to_dict())
     
     # GET FEATURE VECTORS FROM ALL NORMALIZED DB
     db_feats = pd.read_csv(features_csv)
     
     dist_df = compute_distances(query_feats, db_feats, verbose = False)
+    dist_df = dist_df.sort_values(by="scalar_dist", ascending=True)
     
-    print(dist_df.head())
-    dist_df = dist_df.sort_values(by="hist_dist", ascending=True)
-    
-    print(dist_df.head())
     
     
     
     # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
     # get k=5 best-matching shapes (the 5 lowest distances)
-    k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['hist_dist'][:5])]
+    k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['scalar_dist'][:5])]
     
     
     return k_best_matches, norm_mesh # return the k best matches dict, and the normalized mesh too

@@ -32,8 +32,11 @@ def cosine_distance(query_vec, target_vec):
 def euclidean_distance(query_vec, target_vec):
     query_vec = np.array(query_vec)
     target_vec = np.array(target_vec)
+    # print(query_vec)
+    # print(target_vec)
     res = np.sum((query_vec - target_vec) ** 2)
     distance = np.sqrt(res)
+    # print("Distance:", np.sqrt(res))
     return distance
 
 
