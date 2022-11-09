@@ -364,4 +364,29 @@ def filename_to_class(attributes_df):
         file2class[row["filename"]] = row["category"]
         class2files[row['category']].append(row["filename"])
     return file2class, class2files
+
+def standardize_single_value(value, mean, std, verbose = True):
+    """Standardize a single vanue given a mean and std
+    CENTERED at 0.5 and most values will be within [0,1]"""
+    standardized = (0.5 + (value-mean)/(7*std)) #distance from 0 to 1 should be n standard deviations
+    
+    if verbose:
+        if standardized<0 or standardized > 1:
+            print(f"Value: {value}, Mean: {mean}, Std: {std}, Standardized: {standardized}")
+    
+    return standardized
+
+def standardize_column(column, mean=None, std=None):
+    """Take an iterable and standardize it (with given mean/std if given)
+    Return new set of values, also mean and std"""
+    
+    if mean == None or std == None: # calculate standardization parameters if not given
+        mean = np.mean(column)
+        std = np.std(column) 
+    
+    newcolumn = []
+    for value in column:
+        newcolumn.append(standardize_single_value(value, mean, std, verbose = False))
+    
+    return newcolumn, mean, std
         

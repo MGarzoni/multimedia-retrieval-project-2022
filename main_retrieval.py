@@ -181,15 +181,26 @@ def run_query(mesh_path, features_csv):
     # GET FEATURE VECTORS FROM ALL NORMALIZED DB
     db_feats = pd.read_csv(features_csv)
     
+    # get distances and STANDARDIZE
     dist_df = compute_distances(query_feats, db_feats, verbose = False)
-    dist_df = dist_df.sort_values(by="scalar_dist", ascending=True)
+    dist_df['scalar_dist'] = standardize_column(dist_df['scalar_dist'])[0]
+    dist_df['hist_dist'] = standardize_column(dist_df['hist_dist'])[0]
+    
+    # calculate COMBINED DISTANCE which is average of hist and scalar distance
+    dist_df['combined_distance'] = (dist_df['scalar_dist'] + dist_df['hist_dist'])/2
+    
+    # sort by combined distance (note that this can be a negative value due to standardization)
+    dist_df = dist_df.sort_values(by="combined_distance", ascending=True)
+    
+    
+    
     
     
     
     
     # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
     # get k=5 best-matching shapes (the 5 lowest distances)
-    k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['scalar_dist'][:5])]
+    k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['combined_distance'][:5])]
     
     
     return k_best_matches, norm_mesh # return the k best matches dict, and the normalized mesh too
