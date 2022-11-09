@@ -16,7 +16,7 @@ query_image = None
 layout = [  
     [sg.Text('Upload query mesh from disk'), sg.FileBrowse('FileBrowse', file_types=['.ply', '.obj', '.off'], target = '-file-')],
     [sg.InputText(key = '-file-'), sg.Button('Load query')],
-    [sg.Text('Define k number of similar shapes to be retrieved (max. is 5):'), sg.Input(size=10)],
+    [sg.Text('Number of similar shapes to retrieve:'), sg.Button(1), sg.Button(2), sg.Button(3), sg.Button(4), sg.Button(5)],
     [sg.Button('Cancel (close window)')],
     [sg.Image(key = "-IMAGE-", size = (400,300))]
 ]
@@ -41,8 +41,9 @@ while True:
             query_image = ImageTk.PhotoImage(image=im)
             window['-IMAGE-'].update(data=query_image)
             
+            # if event == 1 or event == 2 or event == 3 or event == 4 or event == 5:
             # run the query and print text output
-            print(run_query(values["-file-"], "./features/features.csv")[0])
+            print(run_query(values["-file-"], "./features/features.csv")[0]) # here add k argument to add as number of similar shapes to retrieve
             
     # print to console whatever is input
     print('You loaded ', values["-file-"])
