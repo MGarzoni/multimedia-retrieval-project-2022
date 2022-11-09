@@ -10,7 +10,7 @@ from ast import literal_eval
 from collections import defaultdict
 import pyrender
     
-from PIL import Image
+from PIL import Image, ImageTk
 
 # corners of image, array used for visually consistent png export of meshes
 CORNERS = [[-0.75, -0.75, -0.75],
@@ -146,10 +146,17 @@ def mesh_to_PIL_img(mesh):
     camera = pyrender.PerspectiveCamera( yfov=np.pi / 3.0)
 
     c = 2**-0.5
-    scene.add(camera, pose=[[ 1,  0,  0,  0],
+    cam_pose = pose=[[ 1,  0,  0,  0],
                             [ 0,  c, -c, -2],
                             [ 0,  c,  c,  2],
-                            [ 0,  0,  0,  1]])
+                            [ 0,  0,  0,  1]]
+    
+    scene.add(camera, pose = cam_pose)
+    
+    light = pyrender.SpotLight(color=np.ones(3), intensity=8.0,
+                                innerConeAngle=np.pi/16.0,
+                                outerConeAngle=np.pi/6.0)
+    scene.add(light, pose=cam_pose)
 
     # render scene
     r = pyrender.OffscreenRenderer(512, 512)
@@ -158,6 +165,14 @@ def mesh_to_PIL_img(mesh):
     img = Image.fromarray(color)
     
     return img
+
+
+def mesh_to_ImageTk(mesh, size):
+    """size should be a tuple of length 2"""
+    im = mesh_to_PIL_img(mesh)
+    im = im.resize(size)
+    return ImageTk.PhotoImage(image=im)
+    
 
 
 # def save_image_of_path(path, tag=None):

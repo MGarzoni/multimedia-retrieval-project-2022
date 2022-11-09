@@ -183,17 +183,17 @@ def run_query(mesh_path, features_csv):
     
     dist_df = compute_distances(query_feats, db_feats, verbose = False)
     
+    
     dist_df = dist_df.sort_values(by="scalar_dist", ascending=True)
+    
+    
     
     # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
     # get k=5 best-matching shapes (the 5 lowest distances)
     k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['scalar_dist'][:5])]
     
     
-    return (
-        f"\n== RETRIEVAL OUPUT ==\nThese are the k=5 best matches:\n{k_best_matches}", 
-            norm_mesh
-            )
+    return k_best_matches, norm_mesh # return the k best matches dict, and the normalized mesh too
 
 
 
