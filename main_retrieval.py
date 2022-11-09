@@ -70,15 +70,15 @@ def normalize_mesh_from_path(test_mesh_path):
         
         # calculate attributes of NEW mesh.
         norm_mesh_attributes = extract_attributes_from_mesh(norm_mesh, 
-                                                            mesh_path = None, 
-                                                            filename = raw_mesh_attributes["filename"]+"_(normalized)") # the normalized mesh has no file path
+                                                            mesh_path=None, 
+                                                            filename=raw_mesh_attributes["filename"]+"_(normalized)") # the normalized mesh has no file path
         # print("\n\nNormalized mesh. New attributes:\n\n", norm_mesh_attributes)
 
     return norm_mesh, norm_mesh_attributes
 
 
 # CALL FEATURE EXTRACTION
-def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
+def extract_features(norm_mesh, norm_mesh_attributes, verbose=False):
     """Extract features from a normalized mesh.
     Scalar features are standardized with respect to standardization parameters of database
     
@@ -113,7 +113,7 @@ def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
 
 
 # COMPUTE QUERY FEATURE VECTOR DISTANCES FROM ALL REST OF OTHER VECTORS
-def compute_distances(query_feats, db_feats, verbose = False):
+def compute_distances(query_feats, db_feats, verbose=False):
 
     print("Computing distances from query to rest of DB...")
 
@@ -160,20 +160,20 @@ def compute_distances(query_feats, db_feats, verbose = False):
 
 
 def run_query(mesh_path, features_csv):
+
+    # normalization
     norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
-    query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = False)
+
+    # feature extraction
+    query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose=False)
     
-    # GET FEATURE VECTORS FROM ALL NORMALIZED DB
+    # distance computation
     db_feats = pd.read_csv(features_csv)
-    
-    dist_df = compute_distances(query_feats, db_feats, verbose = False)
-    
+    dist_df = compute_distances(query_feats, db_feats, verbose=False)
     dist_df = dist_df.sort_values(by="scalar_dist", ascending=True)
     
-    # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
-    # get k=5 best-matching shapes (the 5 lowest distances)
+    # sorting and retrieval
     k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['scalar_dist'][:5])]
-    
     
     return (
         f"\n== RETRIEVAL OUPUT ==\nThese are the k=5 best matches:\n{k_best_matches}", 
