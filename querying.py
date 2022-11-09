@@ -11,6 +11,8 @@ import os
 # set theme
 sg.theme('Default')
 
+image_loaded = False
+
 query_image = None
 
 top_matches = None
@@ -60,6 +62,8 @@ layout1 = [
           [sg.InputText(key='-file-')],
             [sg.Button('Load query'), sg.Button('Cancel (close window)')],
             [sg.Image(key = "-IMAGE-", size = (300,300))],
+            [sg.Button('Open 3D viewer'), sg.Button('Find matches')]
+            
         ]
 
 # create the first window
@@ -77,18 +81,20 @@ while True:
             mesh = trimesh.load(values['-file-'])
             query_image = mesh_to_ImageTk(mesh, (300,300))
             window['-IMAGE-'].update(data=query_image)
-            
-            # run the query and get matches
-            top_matches, _ = run_query(values["-file-"], "./features/features.csv")
-                        
-            # open second window to display the results
-            open_results_window()
-            
-            
-        # print to console whatever is input
-        print('You loaded ', values["-file-"])
-        
-    
+            image_loaded = True
+          
+    if event == "Find matches" and image_loaded:
+        # run the query and get matches
+        top_matches, _ = run_query(values["-file-"], "./features/features.csv")
+                    
+        # open second window to display the results
+        open_results_window()
+
+    if event == "Open 3D viewer" and image_loaded:
+        try:
+            trimesh.load(values['-file-']).show(viewer="gl")
+        except Exception as e:
+            print("Failed to load viewer", e)
 
 window.close()
 
