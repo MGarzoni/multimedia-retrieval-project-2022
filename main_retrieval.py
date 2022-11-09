@@ -200,7 +200,8 @@ def run_query(mesh_path, features_csv):
     
     # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
     # get k=5 best-matching shapes (the 5 lowest distances)
-    k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:5], dist_df['combined_distance'][:5])]
+    k = 5
+    k_best_matches = [(fname, dist) for fname, dist in zip(dist_df['path'][:k], dist_df['combined_distance'][:k])]
     
     
     return k_best_matches, norm_mesh # return the k best matches dict, and the normalized mesh too
