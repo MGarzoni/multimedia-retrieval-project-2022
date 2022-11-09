@@ -13,15 +13,16 @@ sg.theme('Default')
 query_image = None
 
 # place here whatever we want in the window
-layout = [  [sg.Text('Upload query mesh from disk')], 
-            [sg.FileBrowse('FileBrowse', file_types=['.ply', '.obj', '.off'], target = '-file-')],
-            [sg.InputText(key = '-file-')],
-            [sg.Button('Load query'), sg.Button('Cancel (close window)')],
-            [sg.Image(key = "-IMAGE-", size = (300,300))],
-        ]
+layout = [  
+    [sg.Text('Upload query mesh from disk'), sg.FileBrowse('FileBrowse', file_types=['.ply', '.obj', '.off'], target = '-file-')],
+    [sg.InputText(key = '-file-'), sg.Button('Load query')],
+    [sg.Text('Define k number of similar shapes to be retrieved (max. is 5):'), sg.Input(size=10)],
+    [sg.Button('Cancel (close window)')],
+    [sg.Image(key = "-IMAGE-", size = (400,300))]
+]
 
 # create the GUI window
-window = sg.Window('MultiPlayer', layout)
+window = sg.Window('3D Shape Retrieval System', layout)
 
 # this is the event loop to process "events"
 # and get the "values" of the inputs
