@@ -1,102 +1,96 @@
 import PySimpleGUI as sg
-import os
-import trimesh
-from utils import *
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import ImageTk
 from main_retrieval import *
-import os
 
 # set theme
 sg.theme('SystemDefault')
-
-image_loaded = False
 
 query_image = None
 
 top_matches = None
 
-result_images = []
+last_image = None
 
 
 def generate_results_window():
-    results_layout = []
+    columns = []
     for index, result in enumerate(top_matches):
-        
         # add image into layout
         mesh = trimesh.load(result[0])
-        query_image = mesh_to_ImageTk(mesh, (100,100))
-        
-        img = ImageTk.getimage( query_image )
-        img.save(f"./pics/result_{index}.png")
-        
-        result_images.append(query_image)
-        
-        results_layout.append([sg.Image(filename = f"./pics/result_{index}.png")])
-        
-        # add file path and distance into layout
+        query_image = mesh_to_buffer(mesh, (100, 100))
         filename = " / ".join((result[0].split("/")[-2:]))
-        results_layout.append([sg.Text(filename + 
-                                       "\nDistance: "
-                                       +str(result[1])+"\n")])
 
-    return sg.Window("Results", results_layout)
+        columns.append(
+            sg.Column([
+                [sg.Button(key=f'preview_{index}', image_data=query_image)],
+                [sg.Text(filename + "\nDistance: " + str(result[1]) + "\n")]]))
+    return sg.Window("Results", [columns])
 
 
 def open_results_window():
     # layout of second window
-    window2 = generate_results_window()    
-    
+    window2 = generate_results_window()
+
     while True:
-        event, values = window2.read()
-        if event == sg.WIN_CLOSED:
+        event_, _ = window2.read()
+        if event_ == sg.WIN_CLOSED:
             break
-        
+
+        if event_.startswith("preview_"):
+            index = event_.replace('preview_', '')
+
+            if index.isdigit():
+                index = int(index)
+                mesh_ = trimesh.load(top_matches[index][0])
+                try:
+                    trimesh.load(mesh_).show(viewer="gl")
+                except Exception as e:
+                    print("Failed to load viewer", e)
+
     window2.close()
 
+
 # layout of initial window
-layout1 = [  
-        [sg.Text('Upload query mesh from disk')], 
-          [sg.FileBrowse('FileBrowse', file_types=(('Mesh files', '.off .ply .obj'),), target='-file-')],
-          [sg.InputText(key='-file-')],
-            [sg.Button('Load query'), sg.Button('Cancel (close window)')],
-            [sg.Image(key = "-IMAGE-", size = (300,300))],
-            [sg.Button('Open 3D viewer'), sg.Button('Find matches')]
-            
-        ]
+layout1 = [
+    [sg.Text('Upload query mesh from disk')],
+    [sg.Text('File', size=(15, 1)), sg.InputText(key='-file-', enable_events=True),
+     sg.FileBrowse('Select', file_types=(('Mesh files', '.off .ply .obj'),), target='-file-')],
+    [sg.Text('Preview', size=(15, 1), visible=False, key="Preview"), sg.Image(key='-preview-', visible=False, )],
+    [sg.Text('Result count', size=(15, 1)), sg.InputText('5', key='-k-', enable_events=True)],
+    [sg.Button('Query', disabled=True)],
+]
 
 # create the first window
-window = sg.Window('MultiPlayer', layout1)
+window = sg.Window('Query image', layout1)
 
 # this is the event loop to process "events"
 # and get the "values" of the inputs
 while True:
     event, values = window.read()
-    if (event == sg.WIN_CLOSED or event == 'Cancel (close window)'): # if user closes window or clicks cancel
+    if event == sg.WIN_CLOSED:
         break
-    
-    if event == 'Load query':
-        if len(values["-file-"]):
+
+    # if event == 'Query':
+    if len(values["-file-"]):
+        if last_image is None or last_image != values['-file-']:
             mesh = trimesh.load(values['-file-'])
-            query_image = mesh_to_ImageTk(mesh, (300,300))
-            window['-IMAGE-'].update(data=query_image)
-            image_loaded = True
-          
-    if event == "Find matches" and image_loaded:
+            query_image = mesh_to_buffer(mesh, (300, 300))
+            window['Preview'].update(visible=True)
+            window['-preview-'].update(visible=True)
+            window['-preview-'].update(query_image)
+            last_image = values['-file-']
+
+    if values['-k-'].isdigit() and int(values['-k-']) > 0 and last_image is not None:
+        window['Query'].update(disabled=False)
+    else:
+        window['Query'].update(disabled=True)
+
+    if event == "Query":
         # run the query and get matches
-        top_matches, _ = run_query(values["-file-"], "./features/features.csv")
-                    
+        top_matches, _ = run_query(values["-file-"], "./features/features.csv", int(values['-k-']))
+
         # open second window to display the results
         open_results_window()
-
-    if event == "Open 3D viewer" and image_loaded:
-        try:
-            trimesh.load(values['-file-']).show(viewer="gl")
-        except Exception as e:
-            print("Failed to load viewer", e)
 
 window.close()
 
 #####
-

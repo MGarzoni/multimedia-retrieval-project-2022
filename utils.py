@@ -1,3 +1,6 @@
+import base64
+from io import BytesIO
+
 import trimesh
 import os
 import math
@@ -172,7 +175,14 @@ def mesh_to_ImageTk(mesh, size):
     im = mesh_to_PIL_img(mesh)
     im = im.resize(size)
     return ImageTk.PhotoImage(image=im)
-    
+
+def mesh_to_buffer(mesh, size):
+    """size should be a tuple of length 2"""
+    im = mesh_to_PIL_img(mesh)
+    im = im.resize(size)
+    buffered = BytesIO()
+    im.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue())
 
 
 # def save_image_of_path(path, tag=None):
