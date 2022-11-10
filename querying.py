@@ -9,7 +9,7 @@ from main_retrieval import *
 import os
 
 # set theme
-sg.theme('Default')
+sg.theme('SystemDefault')
 
 image_loaded = False
 
@@ -58,7 +58,7 @@ def open_results_window():
 # layout of initial window
 layout1 = [  
         [sg.Text('Upload query mesh from disk')], 
-          [sg.FileBrowse('FileBrowse', file_types=['.ply', '.obj', '.off'], target='-file-')],
+          [sg.FileBrowse('FileBrowse', file_types=(('Mesh files', '.off .ply .obj'),), target='-file-')],
           [sg.InputText(key='-file-')],
             [sg.Button('Load query'), sg.Button('Cancel (close window)')],
             [sg.Image(key = "-IMAGE-", size = (300,300))],
