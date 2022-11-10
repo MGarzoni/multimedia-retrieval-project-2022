@@ -22,7 +22,8 @@ def generate_results_window():
         columns.append(
             sg.Column([
                 [sg.Button(key=f'preview_{index}', image_data=query_image)],
-                [sg.Text(filename + "\nDistance: " + str(result[1]) + "\n")]]))
+                [sg.Text(filename + "\nScalar distance: " + str(result[1]) + 
+                         "\nHistogram distance: " + str(result[2]) +"\n")]]))
     return sg.Window("Results", [columns])
 
 
@@ -56,7 +57,7 @@ layout1 = [
      sg.FileBrowse('Select', file_types=(('Mesh files', '.off .ply .obj'),), target='-file-')],
     [sg.Text('Preview', size=(15, 1), visible=False, key="Preview"), sg.Image(key='-preview-', visible=False, )],
     [sg.Text('Result count', size=(15, 1)), sg.InputText('5', key='-k-', enable_events=True)],
-    [sg.Button('Query', disabled=True)],
+    [sg.Button('3D viewer', disabled=True), sg.Button('Query', disabled=True)],
 ]
 
 # create the first window
@@ -78,11 +79,16 @@ while True:
             window['-preview-'].update(visible=True)
             window['-preview-'].update(query_image)
             last_image = values['-file-']
-
+            window['3D viewer'].update(disabled=False)
+            
+            
     if values['-k-'].isdigit() and int(values['-k-']) > 0 and last_image is not None:
-        window['Query'].update(disabled=False)
+        window['Query'].update(disabled=False) # we have both a file and a k value -- we can query now
     else:
         window['Query'].update(disabled=True)
+        
+    if event == "3D viewer":
+        print("Not yet implemented")
 
     if event == "Query":
         # run the query and get matches
