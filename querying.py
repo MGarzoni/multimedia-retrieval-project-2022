@@ -80,6 +80,8 @@ while True:
             window['-preview-'].update(query_image)
             last_image = values['-file-']
             window['3D viewer'].update(disabled=False)
+    else:
+        window['3D viewer'].update(disabled=True)
             
             
     if values['-k-'].isdigit() and int(values['-k-']) > 0 and last_image is not None:
@@ -88,7 +90,11 @@ while True:
         window['Query'].update(disabled=True)
         
     if event == "3D viewer":
-        print("Not yet implemented")
+        mesh_ = trimesh.load(values['-file-'])
+        try:
+            trimesh.load(mesh_).show(viewer="gl")
+        except Exception as e:
+            print("Failed to load viewer", e)
 
     if event == "Query":
         # run the query and get matches
