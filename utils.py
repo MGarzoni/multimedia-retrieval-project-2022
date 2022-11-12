@@ -53,6 +53,7 @@ def extract_attributes_from_mesh(mesh, mesh_path=None, filename = "NA"):
 
     out_dict = {"filename" : mesh_path.split('/')[-1],
                 "path" : mesh_path,
+                "area":mesh.area,
                 "category" : mesh_path.split('/')[-2], # this may change
                 "num_faces" : len(mesh.faces),
                 "num_vertices" : len(mesh.vertices),

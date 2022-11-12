@@ -31,23 +31,29 @@ for filename in os.listdir(new_folder_path):
     elif os.path.isdir(file_path):
         shutil.rmtree(file_path)
 
+# select files we want to keep
 for category in categories:
     #sample 3 files from this category
     category_df = original_df[original_df["category"] == category].sample(N, random_state = 42)
     paths = list(category_df["path"])
     paths_to_keep += paths # add to list of paths to keep
     
-for path in paths_to_keep:
-    filename = os.path.basename(path)
-    category = os.path.basename(os.path.dirname(path))
+    
+new_df = original_df[original_df["path"].isin(paths_to_keep)]
+new_paths = []
+# move these files and their attributes to the new folder and csv
+for index, row in new_df.iterrows():
+    filename = os.path.basename(row["path"])
+    category = os.path.basename(os.path.dirname(row["path"]))
 
     os.makedirs(new_folder_path+category, exist_ok=True)
     
-    shutil.copyfile(path, new_folder_path+category+"/"+filename)
+    new_path = os.path.join(new_folder_path, category, filename)
+    
+    shutil.copyfile(row["path"], new_path)
     new_paths.append(new_folder_path+filename)
     
-new_attributes_df = original_df[original_df["path"].isin(paths_to_keep)]
-new_attributes_df['path'] = new_paths
-new_attributes_df.to_csv(new_csv)
+new_df['path'] = new_paths
+new_df.to_csv(new_csv)
     
 

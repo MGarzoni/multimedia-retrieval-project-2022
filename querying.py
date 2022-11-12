@@ -1,5 +1,6 @@
 import PySimpleGUI as sg
 from main_retrieval import *
+from utils import *
 
 # set theme
 sg.theme('SystemDefault')
@@ -13,17 +14,17 @@ last_image = None
 
 def generate_results_window():
     columns = []
-    for index, result in enumerate(top_matches):
+    for index, row in top_matches.iterrows():
         # add image into layout
-        mesh = trimesh.load(result[0])
+        mesh = trimesh.load(row['path'])
         query_image = mesh_to_buffer(mesh, (220, 220))
-        filename = " / ".join((result[0].split("/")[-2:]))
+        filename = " / ".join((row['path'].split("/")[-2:]))
 
         columns.append(
             sg.Column([
                 [sg.Button(key=f'preview_{index}', image_data=query_image)],
-                [sg.Text(filename + "\nScalar distance: " + str(result[1]) + 
-                         "\nHistogram distance: " + str(result[2]) +"\n")]]))
+                [sg.Text(filename + "\nScalar distance: " + str(row["scalar_dist"]) + 
+                         "\nHistogram distance: " + str(row["hist_dist"]) +"\n")]]))
     return sg.Window("Results", [columns])
 
 
@@ -98,8 +99,8 @@ while True:
 
     if event == "Query":
         # run the query and get matches
-        top_matches, _ = run_query(values["-file-"], "./features/features.csv", int(values['-k-']), 
-                                   verbose = False)
+        top_matches, _ = run_query(values["-file-"], k=int(values['-k-']), 
+                                   verbose = True)
 
         # open second window to display the results
         open_results_window()

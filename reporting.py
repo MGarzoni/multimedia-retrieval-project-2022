@@ -21,11 +21,11 @@ class ShapeReport:
 
         self.stats = pd.DataFrame({
             'stat': self.columns,
-            'mean': data[self.columns].mean(),
-            'median': data[self.columns].median(),
-            'stddev': data[self.columns].std(),
-            'min': data[self.columns].min(),
-            'max': data[self.columns].max()
+            'mean': [data[column].mean() for column in self.columns],
+            'median':[data[column].median() for column in self.columns],
+            'stddev': [data[column].std() for column in self.columns],
+            'min': [data[column].min() for column in self.columns],
+            'max': [data[column].max() for column in self.columns]
         })
 
         self.histograms = {}

@@ -72,14 +72,17 @@ def normalize_db(database, original_csv, out_dir, out_csv, verbose=False):
                     # print(f"\nout_dir --> {out_dir}")
                     # print(f"filename --> {filename}")
                     # print(f"os.path.join(out_dir, filename) --> {os.path.join(out_dir, filename)}")
+                    
+                    out_path = os.path.join(out_dir, category, filename)
     
                     # this one below should be tweaked to create a folder for each mesh before saving, and then save it an the correct category folder
                     os.makedirs(os.path.join(out_dir, category), exist_ok=True)
-                    with open(os.path.join(out_dir, category, filename), 'w+') as fp:
+                    with open(out_path, 'w+') as fp:
                         fp.write(off_file)
     
                     # call function to extract attributes and add them to output_dictionary
                     out_dict = extract_attributes_from_mesh(mesh, full_path)
+                    out_dict["path"] = out_path
                     # if verbose: print("Final attributes:", out_dict)
     
                     # extract attributes into new dictionary
@@ -96,7 +99,7 @@ original_psb_csv = "./attributes/original-PSB-attributes.csv"
 out_dir = "./normalized-psb-db"
 out_csv = "./attributes/normalized-PSB-attributes.csv"
 
-NORMALIZE = False # set to true to re-do normalization
+NORMALIZE = True # set to true to re-do normalization
 UPDATE_CSV = False # set to true to re-update attributes CSV files for both before and after normalization
 
 if NORMALIZE:
@@ -105,7 +108,7 @@ if NORMALIZE:
 if UPDATE_CSV: # since normalization includes CSV, we should not RE update it
     # update csv's if necessary
     update_csv(PSB_PATH, original_psb_csv, flat_dir=False)
-    update_csv(out_dir, out_csv, flat_dir = True)
+    update_csv(out_dir, out_csv, flat_dir = False)
 
 # read in attributes before and after normalization
 before = pd.read_csv(original_psb_csv)

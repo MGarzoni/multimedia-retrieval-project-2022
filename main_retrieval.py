@@ -7,7 +7,8 @@ import copy
 from features_extraction import *
 from distance_metrics import *
 
-STANDARDIZATION_CSV = "./features/standardization_parameters.csv"
+STANDARDIZATION_CSV = "./features/reduced-standardization-parameters.csv"
+FEATURES_CSV = "./features/reduced-db-features-ORIGINAL-standardized.csv"
 
 """
 PIPELINE:
@@ -81,7 +82,7 @@ def normalize_mesh_from_path(test_mesh_path):
 
 
 # CALL FEATURE EXTRACTION
-def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
+def extract_features(norm_mesh, norm_mesh_attributes, filename = None, verbose = False):
     """Extract features from a normalized mesh.
     Scalar features are standardized with respect to standardization parameters of database
     
@@ -114,7 +115,7 @@ def extract_features(norm_mesh, norm_mesh_attributes, verbose = False):
         features[key] = (value)
 
     # calcualte the histograms for each feature as a dictionary
-    feature_hists = extract_hist_features_single_mesh(norm_mesh, returntype="dictionary")
+    feature_hists = extract_hist_features_single_mesh(norm_mesh, filename = filename, verbose = True, returntype="dictionary")
     for feature in hist_feature_methods.keys():
         for i in range(BINS):
             features[f"{feature}_{i}"] = (feature_hists[feature][i])
@@ -149,7 +150,7 @@ def compute_distances(query_feats, db_feats, verbose = False):
     if verbose: print(f"Query scalar features: {query_scalar_copy}\n\nQuery hist: {query_hist_copy}")
 
     # define main distances dict holding required information
-    distances = {'path': [path for path in db_feats['path']], 'hist_dist': [], "scalar_dist":[]}
+    distances = {'path': [path for path in db_feats['path']], 'category':db_feats['category'], 'hist_dist': [], "scalar_dist":[]}
 
     # compute cosine distances on scalar features of query shape to the rest of shapes
     for i in range(len(db_feats[scalar_labels])):
@@ -173,13 +174,15 @@ def compute_distances(query_feats, db_feats, verbose = False):
     return distances
 
 
-def run_query(mesh_path, features_csv, k=5, verbose = False):
+def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
+    
+    
     norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
-    query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = False)
+    query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename = os.path.basename(mesh_path), verbose = True)
     print("QUERY FEATURES", query_feats.to_dict())
     
     # GET FEATURE VECTORS FROM ALL NORMALIZED DB
-    db_feats = pd.read_csv(features_csv)
+    db_feats = pd.read_csv(FEATURES_CSV)
     
     # get distances and STANDARDIZE
     dist_df = compute_distances(query_feats, db_feats, verbose = False)
@@ -192,15 +195,17 @@ def run_query(mesh_path, features_csv, k=5, verbose = False):
     # sort by combined distance (note that this can be a negative value due to standardization)
     dist_df = dist_df.sort_values(by="combined_distance", ascending=True)
     
+    if exclude_self:
+        dist_df[os.path.basename(dist_df['path']) != os.path.basename(mesh_path)]
+    
     # export distances csv if verbose
     if verbose: dist_df.to_csv("distances_dataframe.csv")
     
     # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
     # get k=5 best-matching shapes (the 5 lowest distances)
-    k_best_matches = [(fname, scalar_d, hist_d, combined_d) for fname, scalar_d, hist_d, combined_d in zip(dist_df['path'][:k], 
-                                                                                   dist_df["scalar_dist"][:k],
-                                                                                   dist_df["hist_dist"][:k], 
-                                                                                   dist_df['combined_distance'][:k])]
+    k_best_matches = dist_df.head(k)
+    
+    print(k_best_matches)
 
     return k_best_matches, norm_mesh # return the k best matches dict, and the normalized mesh too
 
@@ -213,7 +218,7 @@ if __name__ == "__main__":
     # USER LOADS IN QUERY MESH (for now just get a random mesh from test db)
     test_mesh_path = os.path.join("./test-db/", np.random.choice(os.listdir("./test-db/")))
     
-    run_query(test_mesh_path, "./features/features.csv")
+    run_query(test_mesh_path)
     
     
     

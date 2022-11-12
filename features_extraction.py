@@ -20,6 +20,14 @@ SAMPLE_N = 2000 # nr random samples taken for each distributional feature
 BINS = 10
 random.seed(46)
 
+# these values determine where it is exported
+FEATURE_CSV_PATH = './features/reduced-db-features-ORIGINAL-standardized.csv'
+STANDARDIZATION_PARAMS_CSV_PATH = './features/reduced-standardization-parameters.csv'
+
+# these values determine where we get the meshes and their attributes, which we then use to normalize them
+NORM_MESHES_PATH = "./reduced-normalized-psb-db/"
+NORM_ATTRIBUTES_CSV_PATH = "./attributes/reduced-normalized-PSB-attributes.csv"
+
 
 
 def get_diameter(mesh, method="fast"):
@@ -73,11 +81,11 @@ def plot_hist(histogram):
     hist, bins = histogram
     plt.step(bins[:-1], hist)
 
-def calculate_a3(mesh):
+def calculate_a3(mesh, seed = 42):
     '''given an array of three-sized arrays (vertices),
     return the angles between every 3 vertices'''
 
-    random.seed(45)
+    random.seed(seed)
 
     
     vertices = list(mesh.vertices)
@@ -103,7 +111,7 @@ def calculate_a3(mesh):
 
     return normalized_histogram_no_bins(results, range=(0, math.pi))
 
-def calculate_d1(mesh):
+def calculate_d1(mesh, seed = 43):
     '''given a mesh, return density histogrma of distances between barycenter and SAMPLE_N vertices
     Due to scaling ot unit cube distances will not be greater than 1.73 (diagonal of unit cube)'''
 
@@ -112,7 +120,7 @@ def calculate_d1(mesh):
     center = mesh.centroid
     all_vertices = list(mesh.vertices)
     
-    random.seed(44)
+    random.seed(seed)
     
     vertices = random.sample(all_vertices, 1000) # repeats are possible
     
@@ -124,12 +132,12 @@ def calculate_d1(mesh):
     
     return normalized_histogram_no_bins(results, range = (0, 1.73))
 
-def calculate_d2(mesh):
+def calculate_d2(mesh, seed = 44):
     '''given a mesh, return hist of distances between SAMPLE_N pairs of vertices
      Range is set to 0, 1.73 as a greater distance is not possible due to unit cube normalization'''
 
 
-    random.seed(43)
+    random.seed(seed)
     
     vertices = list(mesh.vertices)
 
@@ -143,13 +151,13 @@ def calculate_d2(mesh):
     
     return normalized_histogram_no_bins(distances, range = (0, 1.73))
 
-def calculate_d3(mesh):
+def calculate_d3(mesh, seed = 45):
     '''given a mesh, return the square roots of areas of SAMPLE_N triangles
     chosen by random trios of three vertices
     Area of a triangle made inside a unit cube can be no more than half the max
     Cross-section area, so no more than 0.7. Square root of that is no more than 0.85'''
     
-    random.seed(42)
+    random.seed(seed)
 
     
     vertices = list(mesh.vertices)
@@ -179,12 +187,12 @@ def calculate_d3(mesh):
 
     return normalized_histogram_no_bins(sqr_areas, range=(0, 0.85))
 
-def calculate_d4(mesh):
+def calculate_d4(mesh, seed = 46):
     '''given a mesh, return the cube roots of volume of 
     SAMPLE_N tetrahedrons formed by 4 random vertices
     Volume could not be greater than 1 due to unit cube bounding box'''
 
-    random.seed(41)
+    random.seed(seed)
 
 
     vertices = list(mesh.vertices)
@@ -246,7 +254,7 @@ def extract_scalar_features_single_mesh(mesh, standardization_parameters_csv = N
 
 
 
-def extract_features_db(root, to_csv=False, standardize = False):
+def extract_features_db(root, to_csv=False, features_csv_path = None, standardization_csv_path = None, standardize = False):
     '''This function takes a DB path as input and returns a matrix where every row represents a sample (shape)
     and every column is a 3D elementary descriptor; the value in each cell refers to that feature value of that shape.'''
 
@@ -274,8 +282,8 @@ def extract_features_db(root, to_csv=False, standardize = False):
                         feature_list[key].append(value)
         
                     # calcualte the histograms for each feature as a dictionary
-                    feature_hists = extract_hist_features_single_mesh(mesh,
-                                                                      returntype="dictionary")
+                    feature_hists = extract_hist_features_single_mesh(mesh, filename=file,
+                                                                      returntype="dictionary", verbose = True)
                     for feature in hist_feature_methods.keys():
                         for i in range(BINS):
                             feature_list[f"{feature}_{i}"].append(feature_hists[feature][i])
@@ -303,21 +311,34 @@ def extract_features_db(root, to_csv=False, standardize = False):
     # export to csv
     # (STANDARDIZATION PARAMETERS EXPORTED too)
     if to_csv:
-        features_matrix.to_csv('./features/features.csv')
+        features_matrix.to_csv(features_csv_path)
         if standardize:
-            pd.DataFrame.from_dict(standardization_dict).to_csv('./features/standardization_parameters.csv')
+            pd.DataFrame.from_dict(standardization_dict).to_csv(standardization_csv_path)
 
     return features_matrix
 
-def extract_hist_features_single_mesh(mesh, 
+def extract_hist_features_single_mesh(mesh, filename=None,
                                       returntype = "dictionary",
                                       verbose = False):
+    
+    """Seeding is based on filename, to make random sampling consistent for the same file -- 
+    dissimilarity with itself is meaningless"""
+    
+    if filename: # try seeding based on integer in filename, if filename is integer, otherwise default seed
+        try:
+            seed = int(filename.split(".")[0])
+            if verbose: print(f"{filename} read as seed {seed}")
+        except:
+            seed = 42
+            if verbose: print(f"No seed in {filename}")
+    else: # if no filename given
+        seed = 42
     
     """RETURN a vector of histogram bins, total length = nfeatures*BINS
     Order of features is based on order of hist_feature_methods.keys()"""
     
     # get the histograms for each feature
-    feature_hists = {feature:hist_feature_methods[feature](mesh) for feature in hist_feature_methods.keys()}
+    feature_hists = {feature:hist_feature_methods[feature](mesh, seed = seed + index) for index, feature in enumerate(hist_feature_methods.keys())}
     
     # if as dictionary, return dictionary of histograms
     if returntype == "dictionary":
@@ -408,8 +429,10 @@ if __name__ == "__main__":
     """============Loading and extracting features from sample mesh==============="""
     
 
-    NORM_PATH = "./normalized-psb-db/"
-    attributes_df = pd.read_csv("./attributes/normalized-PSB-attributes.csv")
+    
+    attributes_df = pd.read_csv(NORM_ATTRIBUTES_CSV_PATH)
+    
+    
     file2class, class2files = filename_to_class(attributes_df) # create dicts mapping filenames to categories
 
     # code below to check if any shape has holes
@@ -428,16 +451,22 @@ if __name__ == "__main__":
 
     """============EXTRACT FEATURES FROM DATABASE=========="""
 
-    EXTRACT = False
+    EXTRACT = True
+    REPORT = False
 
     if EXTRACT:
-        extract_features_db(NORM_PATH, to_csv=True, standardize=True)
+        extract_features_db(NORM_MESHES_PATH, 
+                            to_csv=True, 
+                            features_csv_path = FEATURE_CSV_PATH, 
+                            standardization_csv_path = STANDARDIZATION_PARAMS_CSV_PATH,
+                            standardize=True)
     
     # reporting
-    feat_hist = pd.read_csv("./features/features.csv")
-    report = reporting.FeatureReport(feat_hist)
-    report.save('feature_plots')
-    report.save('feature_plots_grouped', True)
-    
+    if REPORT:
+        feat_hist = pd.read_csv(FEATURE_CSV_PATH)
+        report = reporting.FeatureReport(feat_hist)
+        report.save('feature_plots')
+        report.save('feature_plots_grouped', True)
+        
 
 
