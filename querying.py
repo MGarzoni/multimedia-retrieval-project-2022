@@ -16,7 +16,7 @@ def generate_results_window():
     for index, result in enumerate(top_matches):
         # add image into layout
         mesh = trimesh.load(result[0])
-        query_image = mesh_to_buffer(mesh, (100, 100))
+        query_image = mesh_to_buffer(mesh, (220, 220))
         filename = " / ".join((result[0].split("/")[-2:]))
 
         columns.append(
@@ -92,7 +92,8 @@ while True:
 
     if event == "Query":
         # run the query and get matches
-        top_matches, _ = run_query(values["-file-"], "./features/features.csv", int(values['-k-']))
+        top_matches, _ = run_query(values["-file-"], "./features/features.csv", int(values['-k-']), 
+                                   verbose = False)
 
         # open second window to display the results
         open_results_window()

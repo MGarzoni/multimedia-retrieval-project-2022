@@ -173,7 +173,7 @@ def compute_distances(query_feats, db_feats, verbose = False):
     return distances
 
 
-def run_query(mesh_path, features_csv, k=5):
+def run_query(mesh_path, features_csv, k=5, verbose = False):
     norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
     query_feats = extract_features(norm_mesh, norm_mesh_attributes, verbose = False)
     print("QUERY FEATURES", query_feats.to_dict())
@@ -191,6 +191,9 @@ def run_query(mesh_path, features_csv, k=5):
     
     # sort by combined distance (note that this can be a negative value due to standardization)
     dist_df = dist_df.sort_values(by="combined_distance", ascending=True)
+    
+    # export distances csv if verbose
+    if verbose: dist_df.to_csv("distances_dataframe.csv")
     
     # SELECT K OR T USER DEFINED CLOSEST FEAT VECTORS AND RETRIEVE MESHES
     # get k=5 best-matching shapes (the 5 lowest distances)
