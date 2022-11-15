@@ -190,10 +190,10 @@ def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
     dist_df['hist_dist_standard'] = standardize_column(dist_df['hist_dist'])[0]
     
     # calculate COMBINED DISTANCE which is average of hist and scalar distance
-    dist_df['combined_distance'] = (dist_df['scalar_dist_standard'] + dist_df['hist_dist_standard'])/2
+    dist_df['dist'] = (dist_df['scalar_dist_standard'] + dist_df['hist_dist_standard'])/2
     
     # sort by combined distance (note that this can be a negative value due to standardization)
-    dist_df = dist_df.sort_values(by="combined_distance", ascending=True)
+    dist_df = dist_df.sort_values(by="dist", ascending=True)
     
     if exclude_self:
         dist_df[os.path.basename(dist_df['path']) != os.path.basename(mesh_path)]

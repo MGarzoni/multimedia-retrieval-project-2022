@@ -1,5 +1,6 @@
 import PySimpleGUI as sg
 from main_retrieval import *
+from scaling import ANNIndex
 from utils import *
 
 # set theme
@@ -10,6 +11,8 @@ query_image = None
 top_matches = None
 
 last_image = None
+
+windows = list()
 
 
 def generate_results_window():
@@ -23,19 +26,82 @@ def generate_results_window():
         columns.append(
             sg.Column([
                 [sg.Button(key=f'preview_{index}', image_data=query_image)],
-                [sg.Text(filename + "\nScalar distance: " + str(row["scalar_dist"]) + 
-                         "\nHistogram distance: " + str(row["hist_dist"]) +"\n")]]))
+                [sg.Text(filename + "\nDistance: " + str(row["dist"]) + "\n")]]))
     return sg.Window("Results", [columns])
 
 
-def open_results_window():
-    # layout of second window
-    window2 = generate_results_window()
+# layout of initial window
+layout1 = [
+    [sg.Text('Upload query mesh from disk')],
+    [sg.Text('File', size=(15, 1)), sg.InputText(key='-file-', enable_events=True),
+     sg.FileBrowse('Select', file_types=(('Mesh files', '.off .ply .obj'),), target='-file-')],
+    [sg.Text('Preview', size=(15, 1), visible=False, key="Preview"), sg.Image(key='-preview-', visible=False, )],
+    [sg.Text('Result count', size=(15, 1)), sg.InputText('5', key='-k-', enable_events=True)],
+    [sg.Checkbox('Use ANN', key='-ann-', default=True)],
+    [sg.Button('3D viewer', disabled=True), sg.Button('Query', disabled=True)],
+]
 
-    while True:
-        event_, _ = window2.read()
+# create the first window
+main_window = sg.Window('Query image', layout1)
+
+# this is the event loop to process "events"
+# and get the "values" of the inputs
+while True:
+    event, values = main_window.read()
+    if event == sg.WIN_CLOSED:
+        break
+
+    # if event == 'Query':
+    if len(values["-file-"]):
+        if last_image is None or last_image != values['-file-']:
+            mesh = trimesh.load(values['-file-'])
+            query_image = mesh_to_buffer(mesh, (300, 300))
+            main_window['Preview'].update(visible=True)
+            main_window['-preview-'].update(visible=True)
+            main_window['-preview-'].update(query_image)
+            last_image = values['-file-']
+            main_window['3D viewer'].update(disabled=False)
+    else:
+        main_window['3D viewer'].update(disabled=True)
+
+    if values['-k-'].isdigit() and int(values['-k-']) > 0 and last_image is not None:
+        main_window['Query'].update(disabled=False)  # we have both a file and a k value -- we can query now
+    else:
+        main_window['Query'].update(disabled=True)
+
+    if event == "3D viewer":
+        mesh_ = trimesh.load(values['-file-'])
+        try:
+            trimesh.load(mesh_).show(viewer="gl")
+        except Exception as e:
+            print("Failed to load viewer", e)
+
+    if event == "Query":
+        if values['-ann-']:
+            FEATURE_CSV_PATH = './features/reduced-db-features-ORIGINAL-standardized.csv'
+            idx = ANNIndex(pd.read_csv(FEATURE_CSV_PATH))
+
+            norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(values["-file-"])
+            query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename=os.path.basename(values["-file-"]),
+                                           verbose=True)
+
+            columns = [c for c in query_feats.columns if any(f in c for f in ANNIndex.features)]
+
+            top_matches = idx.query(list(query_feats[columns].iloc[0]), k=int(values['-k-']))
+        else:
+            # run the query and get matches
+            top_matches, _ = run_query(values["-file-"], k=int(values['-k-']),
+                                       verbose=True)
+
+        # open second window to display the results
+        windows.append(generate_results_window())
+
+    for window in windows:
+        event_, _ = window.read()
+
         if event_ == sg.WIN_CLOSED:
-            break
+            window.close()
+            continue
 
         if event_.startswith("preview_"):
             index = event_.replace('preview_', '')
@@ -48,63 +114,8 @@ def open_results_window():
                 except Exception as e:
                     print("Failed to load viewer", e)
 
-    window2.close()
 
+main_window.close()
 
-# layout of initial window
-layout1 = [
-    [sg.Text('Upload query mesh from disk')],
-    [sg.Text('File', size=(15, 1)), sg.InputText(key='-file-', enable_events=True),
-     sg.FileBrowse('Select', file_types=(('Mesh files', '.off .ply .obj'),), target='-file-')],
-    [sg.Text('Preview', size=(15, 1), visible=False, key="Preview"), sg.Image(key='-preview-', visible=False, )],
-    [sg.Text('Result count', size=(15, 1)), sg.InputText('5', key='-k-', enable_events=True)],
-    [sg.Button('3D viewer', disabled=True), sg.Button('Query', disabled=True)],
-]
-
-# create the first window
-window = sg.Window('Query image', layout1)
-
-# this is the event loop to process "events"
-# and get the "values" of the inputs
-while True:
-    event, values = window.read()
-    if event == sg.WIN_CLOSED:
-        break
-
-    # if event == 'Query':
-    if len(values["-file-"]):
-        if last_image is None or last_image != values['-file-']:
-            mesh = trimesh.load(values['-file-'])
-            query_image = mesh_to_buffer(mesh, (300, 300))
-            window['Preview'].update(visible=True)
-            window['-preview-'].update(visible=True)
-            window['-preview-'].update(query_image)
-            last_image = values['-file-']
-            window['3D viewer'].update(disabled=False)
-    else:
-        window['3D viewer'].update(disabled=True)
-            
-            
-    if values['-k-'].isdigit() and int(values['-k-']) > 0 and last_image is not None:
-        window['Query'].update(disabled=False) # we have both a file and a k value -- we can query now
-    else:
-        window['Query'].update(disabled=True)
-        
-    if event == "3D viewer":
-        mesh_ = trimesh.load(values['-file-'])
-        try:
-            trimesh.load(mesh_).show(viewer="gl")
-        except Exception as e:
-            print("Failed to load viewer", e)
-
-    if event == "Query":
-        # run the query and get matches
-        top_matches, _ = run_query(values["-file-"], k=int(values['-k-']), 
-                                   verbose = True)
-
-        # open second window to display the results
-        open_results_window()
-
-window.close()
-
-#####
+for window in windows:
+    window.close()
