@@ -34,13 +34,13 @@ print(f"target shape label: {target_label}")
 print(f"query shapes (k=5) labels: {query_labels}")
 
 # binarized labels
-y_true = [1 for i in range(5)]
-y_pred = [1 if ql == rand_cat else 0 for ql in query_labels]
+y_true = [1 for i in range(5)] + [0]
+y_pred = [1 if ql == rand_cat else 0 for ql in query_labels] + [0]
 print(f"binarized target shape labels: {y_true}")
 print(f"binarized query shapes (k=5) labels: {y_pred}")
 
 # confusion matrix and classification report
-from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score
+from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score, roc_curve
 cm = confusion_matrix(y_true, y_pred)
 print(f"confusion matrix:\n{cm}")
 cr = classification_report(y_true, y_pred, zero_division=0)
@@ -48,4 +48,10 @@ print(f"classification report:\n{cr}")
 
 # roc auc score
 roc_auc = roc_auc_score(y_true, y_pred)
-print(roc_auc)
+print(f"roc auc score: {roc_auc}")
+
+# plot curve
+fpr, tpr, thresholds = roc_curve(y_true, y_pred)
+plt.plot(fpr, tpr)
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
