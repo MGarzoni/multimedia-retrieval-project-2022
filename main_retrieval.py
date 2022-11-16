@@ -7,8 +7,8 @@ import copy
 from features_extraction import *
 from distance_metrics import *
 
-STANDARDIZATION_CSV = "./features/reduced-standardization-parameters.csv"
-FEATURES_CSV = "./features/reduced-db-features-ORIGINAL-standardized.csv"
+STANDARDIZATION_CSV = "./features/standardization-parameters.csv"
+FEATURES_CSV = "./features/features.csv"
 
 """
 PIPELINE:
@@ -174,7 +174,10 @@ def compute_distances(query_feats, db_feats, verbose = False):
     return distances
 
 
-def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
+def run_query(mesh_path, k=5, verbose = False, exclude_self = False, scalar_weight = 0.5):
+    
+    """scalar_weight sets the weight of scalar vs hist distances 
+    (hist weight becomes 1 - scalar_weight)"""
     
     
     norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
@@ -190,7 +193,7 @@ def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
     dist_df['hist_dist_standard'] = standardize_column(dist_df['hist_dist'])[0]
     
     # calculate COMBINED DISTANCE which is average of hist and scalar distance
-    dist_df['combined_distance'] = (dist_df['scalar_dist_standard'] + dist_df['hist_dist_standard'])/2
+    dist_df['combined_distance'] = scalar_weight * dist_df['scalar_dist_standard'] + (1-scalar_weight)*dist_df['hist_dist_standard']
     
     # sort by combined distance (note that this can be a negative value due to standardization)
     dist_df = dist_df.sort_values(by="combined_distance", ascending=True)

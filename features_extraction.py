@@ -21,8 +21,9 @@ BINS = 10
 random.seed(46)
 
 # these values determine where it is exported
-FEATURE_CSV_PATH = './features/reduced-db-features-ORIGINAL-standardized.csv'
-STANDARDIZATION_PARAMS_CSV_PATH = './features/reduced-standardization-parameters.csv'
+FEATURE_CSV_PATH = './features/features.csv'
+STANDARDIZATION_PARAMS_CSV_PATH = './features/standardization-parameters.csv'
+STANDARDIZE = True
 
 # these values determine where we get the meshes and their attributes, which we then use to normalize them
 NORM_MESHES_PATH = "./reduced-normalized-psb-db/"
@@ -86,29 +87,33 @@ def calculate_a3(mesh, seed = 42):
     return the angles between every 3 vertices'''
 
     random.seed(seed)
-
+    
+    results = []
     
     vertices = list(mesh.vertices)
-
+    
     # generatre N trios of vertices (could be repeats)
     trios = [random.sample(vertices, 3) for i in range(SAMPLE_N)]
 
-    results = []
+    sqr_areas = []
 
     for trio in trios:
 
         # three points
-        a, b, c = trio
+        p1, p2, p3 = trio
         
         # create two vectors defining the triangle
-        ab = b-a
-        ac = c-a
-        
-        cosine_angle = np.dot(ab, ac) / (np.linalg.norm(ab) * np.linalg.norm(ac))
-        angle = np.arccos(cosine_angle)
+        a = p2- p1
+        b = p3 - p1
                 
-        results.append(angle)
-
+        # calculate cross product to get area
+        cross_pr = np.cross(a, b)
+        
+        # magnitude of cross product / 2 = triangle area
+        area = 0.5 * hypot(cross_pr[0], cross_pr[1], cross_pr[2])
+        
+        # square root of area added to results
+        sqr_areas.append(sqrt(area))
     return normalized_histogram_no_bins(results, range=(0, math.pi))
 
 def calculate_d1(mesh, seed = 43):
@@ -459,7 +464,7 @@ if __name__ == "__main__":
                             to_csv=True, 
                             features_csv_path = FEATURE_CSV_PATH, 
                             standardization_csv_path = STANDARDIZATION_PARAMS_CSV_PATH,
-                            standardize=True)
+                            standardize=STANDARDIZE)
     
     # reporting
     if REPORT:

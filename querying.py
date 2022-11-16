@@ -57,6 +57,11 @@ layout1 = [
     [sg.Text('File', size=(15, 1)), sg.InputText(key='-file-', enable_events=True),
      sg.FileBrowse('Select', file_types=(('Mesh files', '.off .ply .obj'),), target='-file-')],
     [sg.Text('Preview', size=(15, 1), visible=False, key="Preview"), sg.Image(key='-preview-', visible=False, )],
+    [sg.Text("Scalar distance weight:   "), sg.Slider(key = "-scalarslider-", range=(0.0,1.0), 
+                                                      default_value = 0.5,
+                                                      resolution = 0.05,
+                                                      orientation = "h")],
+    [sg.Text("Histogram distance weight:"), sg.Text("0.5", key = "-histweight-")],
     [sg.Text('Result count', size=(15, 1)), sg.InputText('5', key='-k-', enable_events=True)],
     [sg.Button('3D viewer', disabled=True), sg.Button('Query', disabled=True)],
 ]
@@ -68,6 +73,9 @@ window = sg.Window('Query image', layout1)
 # and get the "values" of the inputs
 while True:
     event, values = window.read()
+    
+    window["-histweight-"].update(value=str(1-values['-scalarslider-']))
+    
     if event == sg.WIN_CLOSED:
         break
 
@@ -84,7 +92,10 @@ while True:
     else:
         window['3D viewer'].update(disabled=True)
             
+    if event == "-scalarslider-":
+        print("Scalar slid")
             
+    
     if values['-k-'].isdigit() and int(values['-k-']) > 0 and last_image is not None:
         window['Query'].update(disabled=False) # we have both a file and a k value -- we can query now
     else:
@@ -99,7 +110,8 @@ while True:
 
     if event == "Query":
         # run the query and get matches
-        top_matches, _ = run_query(values["-file-"], k=int(values['-k-']), 
+        top_matches, _ = run_query(values["-file-"], k=int(values['-k-']),
+                                   scalar_weight=values['-scalarslider-'],
                                    verbose = True)
 
         # open second window to display the results
