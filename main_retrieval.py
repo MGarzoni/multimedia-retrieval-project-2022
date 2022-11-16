@@ -7,8 +7,8 @@ import copy
 from features_extraction import *
 from distance_metrics import *
 
-STANDARDIZATION_CSV = "./features/standardization-parameters.csv"
-FEATURES_CSV = "./features/features.csv"
+STANDARDIZATION_CSV = "./features/reduced-standardization-parameters.csv"
+FEATURES_CSV = "./features/reduced-db-features-ORIGINAL-standardized.csv"
 
 """
 PIPELINE:
@@ -104,7 +104,7 @@ def extract_features(norm_mesh, norm_mesh_attributes, filename = None, verbose =
     features = defaultdict(list)
     features['filename'].append(norm_mesh_attributes['filename'])
     features['category'].append(norm_mesh_attributes['category'])
-    print(features)
+    if verbose: print(features)
     
 
     # append only the VALUES of the histogram, not the bins
@@ -174,29 +174,26 @@ def compute_distances(query_feats, db_feats, verbose = False):
     return distances
 
 
-def run_query(mesh_path, k=5, verbose = False, exclude_self = False, scalar_weight = 0.5):
-    
-    """scalar_weight sets the weight of scalar vs hist distances 
-    (hist weight becomes 1 - scalar_weight)"""
+def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
     
     
     norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
-    query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename = os.path.basename(mesh_path), verbose = True)
-    print("QUERY FEATURES", query_feats.to_dict())
+    query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename = os.path.basename(mesh_path))
+    if verbose: print("QUERY FEATURES", query_feats.to_dict())
     
     # GET FEATURE VECTORS FROM ALL NORMALIZED DB
     db_feats = pd.read_csv(FEATURES_CSV)
     
     # get distances and STANDARDIZE
-    dist_df = compute_distances(query_feats, db_feats, verbose = False)
+    dist_df = compute_distances(query_feats, db_feats)
     dist_df['scalar_dist_standard'] = standardize_column(dist_df['scalar_dist'])[0]
     dist_df['hist_dist_standard'] = standardize_column(dist_df['hist_dist'])[0]
     
     # calculate COMBINED DISTANCE which is average of hist and scalar distance
-    dist_df['combined_distance'] = scalar_weight * dist_df['scalar_dist_standard'] + (1-scalar_weight)*dist_df['hist_dist_standard']
+    dist_df['dist'] = (dist_df['scalar_dist_standard'] + dist_df['hist_dist_standard'])/2
     
     # sort by combined distance (note that this can be a negative value due to standardization)
-    dist_df = dist_df.sort_values(by="combined_distance", ascending=True)
+    dist_df = dist_df.sort_values(by="dist", ascending=True)
     
     if exclude_self:
         dist_df[os.path.basename(dist_df['path']) != os.path.basename(mesh_path)]
@@ -208,7 +205,7 @@ def run_query(mesh_path, k=5, verbose = False, exclude_self = False, scalar_weig
     # get k=5 best-matching shapes (the 5 lowest distances)
     k_best_matches = dist_df.head(k)
     
-    print(k_best_matches)
+    if verbose: print(k_best_matches)
 
     return k_best_matches, norm_mesh # return the k best matches dict, and the normalized mesh too
 
