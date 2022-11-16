@@ -6,20 +6,21 @@ from scipy.spatial import distance_matrix
 from scipy.stats import wasserstein_distance
 
 # get csvs holding features
-scalar_df = pd.read_csv("./features/scalar_features.csv")
-hist_df = pd.read_csv('./features/hist_features.csv')
-all_features = pd.read_csv('./features/features.csv') # .drop(['Unnamed: 0', 'path', 'filename', 'category'], axis=1)
+# scalar_df = pd.read_csv("./features/scalar_features.csv")
+# hist_df = pd.read_csv('./features/hist_features.csv')
+all_features = pd.read_csv('./features/features.csv') #.drop(['Unnamed: 0', 'path', 'filename', 'category'], axis=1)
 
-data = all_features.values
-dm = distance_matrix(data, data)
-dm_df = pd.DataFrame(dm)
-print(dm_df.info())
+# data = all_features.values
+# dm = distance_matrix(data, data)
+# dm_df = pd.DataFrame(dm)
+# print(dm_df.info())
 
 def dist_heatmap(features_matrix, title=None):
     '''Function that takes a feature matrix (N*D, with N = number of shapes, D = number of descriptors),
     converts it to a dataframe and return a heatmap showing euclidean distances between feat vectors'''
 
     features_matrix = features_matrix.drop(['Unnamed: 0', 'path', 'filename', 'category'], axis=1)
+
     dm = distance_matrix(features_matrix.values, features_matrix.values)
     dm_df =  pd.DataFrame(dm)
     sns.set(rc = {'figure.figsize':(25, 20)})

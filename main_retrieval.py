@@ -7,8 +7,8 @@ import copy
 from features_extraction import *
 from distance_metrics import *
 
-STANDARDIZATION_CSV = "./features/reduced-standardization-parameters.csv"
-FEATURES_CSV = "./features/reduced-db-features-ORIGINAL-standardized.csv"
+STANDARDIZATION_CSV = "./features/standardization_parameters.csv"
+FEATURES_CSV = "./features/features.csv"
 
 """
 PIPELINE:
@@ -185,7 +185,7 @@ def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
     db_feats = pd.read_csv(FEATURES_CSV)
     
     # get distances and STANDARDIZE
-    dist_df = compute_distances(query_feats, db_feats)
+    dist_df = compute_distances(query_feats, db_feats, verbose = verbose)
     dist_df['scalar_dist_standard'] = standardize_column(dist_df['scalar_dist'])[0]
     dist_df['hist_dist_standard'] = standardize_column(dist_df['hist_dist'])[0]
     

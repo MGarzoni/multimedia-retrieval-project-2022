@@ -25,7 +25,9 @@ path_random_query_mesh = f"./normalized-psb-db/{rand_cat}/{random_query_mesh}"
 query_attributes = attributes.loc[attributes["path"] == path_random_query_mesh]
 
 # run query and retrieve 5 best results
-query_results = run_query(path_random_query_mesh)
+query_results = run_query(path_random_query_mesh, verbose = True)
+
+print(query_results[0])
 
 # get labels of query and results
 target_label = list(query_attributes["category"])

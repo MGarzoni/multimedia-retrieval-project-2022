@@ -87,9 +87,7 @@ def calculate_a3(mesh, seed = 42):
     return the angles between every 3 vertices'''
 
     random.seed(seed)
-    
-    results = []
-    
+        
     vertices = list(mesh.vertices)
     
     # generatre N trios of vertices (could be repeats)
@@ -114,7 +112,8 @@ def calculate_a3(mesh, seed = 42):
         
         # square root of area added to results
         sqr_areas.append(sqrt(area))
-    return normalized_histogram_no_bins(results, range=(0, math.pi))
+        
+    return normalized_histogram_no_bins(sqr_areas, range=(0, math.pi))
 
 def calculate_d1(mesh, seed = 43):
     '''given a mesh, return density histogrma of distances between barycenter and SAMPLE_N vertices
@@ -456,7 +455,7 @@ if __name__ == "__main__":
 
     """============EXTRACT FEATURES FROM DATABASE=========="""
 
-    EXTRACT = True
+    EXTRACT = False
     REPORT = False
 
     if EXTRACT:
