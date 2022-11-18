@@ -376,7 +376,7 @@ def filename_to_class(attributes_df):
         class2files[row['category']].append(row["filename"])
     return file2class, class2files
 
-def standardize_single_value(value, mean, std, verbose = True):
+def standardize_single_value(value, mean, std, verbose = False):
     """Standardize a single vanue given a mean and std
     CENTERED at 0.5 and most values will be within [0,1]"""
     standardized = (0.5 + (value-mean)/(7*std)) #distance from 0 to 1 should be n standard deviations

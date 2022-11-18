@@ -287,7 +287,7 @@ def extract_features_db(root, to_csv=False, features_csv_path = None, standardiz
         
                     # calcualte the histograms for each feature as a dictionary
                     feature_hists = extract_hist_features_single_mesh(mesh, filename=file,
-                                                                      returntype="dictionary", verbose = True)
+                                                                      returntype="dictionary", verbose = False)
                     for feature in hist_feature_methods.keys():
                         for i in range(BINS):
                             feature_list[f"{feature}_{i}"].append(feature_hists[feature][i])

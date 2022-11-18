@@ -16,6 +16,27 @@ import os
 import random
 import pandas as pd
 from main_retrieval import *
+from tqdm import tqdm
+import seaborn as sn
+
+
+
+CLASSIFY_ALL_OBJECTS = False
+
+"""============PREDICT CLASS FOR EVERY OBJECT AND PLOT CONFUSION MATRIX==========="""
+
+
+if CLASSIFY_ALL_OBJECTS:
+# make prediction for EVERY object in the feature database
+    features_df = pd.read_csv(FEATURES_CSV)
+    all_paths = features_df["path"]
+    predicted_classes = [predict_class(path, scalar_weight = 1, verbose=False) for path in tqdm(all_paths)]
+    true_classes = features_df["category"]
+
+    # plot heat map
+    cm = pd.crosstab(true_classes, predicted_classes, rownames = ['True'], colnames = ["Predicted"], margins = False)
+    cm.to_csv("confusion_matrix.csv")
+    sn.heatmap(cm, annot=True)
 
 # get attributes from a given query mesh
 attributes = pd.read_csv("./attributes/normalized-PSB-attributes.csv")
@@ -23,6 +44,9 @@ rand_cat = random.choice(os.listdir("./normalized-psb-db/"))
 random_query_mesh = random.choice(os.listdir(f"./normalized-psb-db/{rand_cat}/"))
 path_random_query_mesh = f"./normalized-psb-db/{rand_cat}/{random_query_mesh}"
 query_attributes = attributes.loc[attributes["path"] == path_random_query_mesh]
+
+# predict class
+prediction = predict_class(path_random_query_mesh, verbose=True)
 
 # run query and retrieve 5 best results
 query_results = run_query(path_random_query_mesh, verbose = True)

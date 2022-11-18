@@ -6,6 +6,7 @@ from utils import *
 import copy
 from features_extraction import *
 from distance_metrics import *
+from collections import Counter
 
 STANDARDIZATION_CSV = "./features/standardization_parameters.csv"
 FEATURES_CSV = "./features/features.csv"
@@ -88,7 +89,7 @@ def extract_features(norm_mesh, norm_mesh_attributes, filename = None, verbose =
     
     RETURNS: scalar features as dictionary, histogram features as one long vector"""
     
-    print("Extracting features from query mesh...")
+    if verbose: print("Extracting features from query mesh...")
 
     # # extract scalar features as dictionary
     # scalar_feats = extract_scalar_features_single_mesh(norm_mesh, 
@@ -115,7 +116,7 @@ def extract_features(norm_mesh, norm_mesh_attributes, filename = None, verbose =
         features[key] = (value)
 
     # calcualte the histograms for each feature as a dictionary
-    feature_hists = extract_hist_features_single_mesh(norm_mesh, filename = filename, verbose = True, returntype="dictionary")
+    feature_hists = extract_hist_features_single_mesh(norm_mesh, filename = filename, verbose = False, returntype="dictionary")
     for feature in hist_feature_methods.keys():
         for i in range(BINS):
             features[f"{feature}_{i}"] = (feature_hists[feature][i])
@@ -131,7 +132,7 @@ def extract_features(norm_mesh, norm_mesh_attributes, filename = None, verbose =
 # COMPUTE QUERY FEATURE VECTOR DISTANCES FROM ALL REST OF OTHER VECTORS
 def compute_distances(query_feats, db_feats, verbose = False):
 
-    print("Computing distances from query to rest of DB...")
+    if verbose: print("Computing distances from query to rest of DB...")
 
     # saving scalar and hist feat names
     scalar_labels = ['area', 'volume', 'aabb_volume', 'compactness', 'diameter', 'eccentricity']
@@ -174,11 +175,11 @@ def compute_distances(query_feats, db_feats, verbose = False):
     return distances
 
 
-def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
+def run_query(mesh_path, k=5, scalar_weight = 0.5, verbose = False, exclude_self = False):
     
     
     norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
-    query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename = os.path.basename(mesh_path))
+    query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename = os.path.basename(mesh_path), verbose = False)
     if verbose: print("QUERY FEATURES", query_feats.to_dict())
     
     # GET FEATURE VECTORS FROM ALL NORMALIZED DB
@@ -189,14 +190,14 @@ def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
     dist_df['scalar_dist_standard'] = standardize_column(dist_df['scalar_dist'])[0]
     dist_df['hist_dist_standard'] = standardize_column(dist_df['hist_dist'])[0]
     
-    # calculate COMBINED DISTANCE which is average of hist and scalar distance
-    dist_df['dist'] = (dist_df['scalar_dist_standard'] + dist_df['hist_dist_standard'])/2
+    # calculate COMBINED DISTANCE weighted by the scalar_weight and 1-scalar_weight for the histogram distance
+    dist_df['dist'] = (scalar_weight * dist_df['scalar_dist_standard'] + (1-scalar_weight)*dist_df['hist_dist_standard'])/2
     
     # sort by combined distance (note that this can be a negative value due to standardization)
     dist_df = dist_df.sort_values(by="dist", ascending=True)
     
-    if exclude_self:
-        dist_df[os.path.basename(dist_df['path']) != os.path.basename(mesh_path)]
+    if exclude_self: # if want to exclude query filename from results
+        dist_df = dist_df[~dist_df['path'].str.contains(os.path.basename(mesh_path)+"$")] # use regex to skip files that have same filename as query
     
     # export distances csv if verbose
     if verbose: dist_df.to_csv("distances_dataframe.csv")
@@ -209,7 +210,19 @@ def run_query(mesh_path, k=5, verbose = False, exclude_self = False):
 
     return k_best_matches, norm_mesh # return the k best matches dict, and the normalized mesh too
 
-
+def predict_class(mesh_path, k=5, scalar_weight = 0.5, verbose = False):
+    """Given a mesh path, return the most common class in the query results (if multiple most common classes, choose arbitrarily)."""
+    query_results = run_query(mesh_path, k=k, scalar_weight = scalar_weight, exclude_self = True)
+    labels = query_results[0]['category']
+    prediction = Counter(labels).most_common(1)[0][0] # most common prediction label
+    
+    if verbose:
+        print(mesh_path)
+        # print(query_results)
+        print("Predicted class:", prediction)
+    
+    return prediction
+    
 
 
 if __name__ == "__main__":
