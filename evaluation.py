@@ -21,7 +21,7 @@ import seaborn as sn
 
 
 
-CLASSIFY_ALL_OBJECTS = False
+CLASSIFY_ALL_OBJECTS = True
 
 """============PREDICT CLASS FOR EVERY OBJECT AND PLOT CONFUSION MATRIX==========="""
 
@@ -29,11 +29,11 @@ CLASSIFY_ALL_OBJECTS = False
 if CLASSIFY_ALL_OBJECTS:
 # make prediction for EVERY object in the feature database
     features_df = pd.read_csv(FEATURES_CSV)
-    all_paths = features_df["path"]
+    all_paths = features_df["path"] # list of all paths to classify
     predicted_classes = [predict_class(path, scalar_weight = 1, verbose=False) for path in tqdm(all_paths)]
     true_classes = features_df["category"]
 
-    # plot heat map
+    # create and plot confusion matrix as heat map
     cm = pd.crosstab(true_classes, predicted_classes, rownames = ['True'], colnames = ["Predicted"], margins = False)
     cm.to_csv("confusion_matrix.csv")
     sn.heatmap(cm, annot=True)
