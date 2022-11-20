@@ -21,7 +21,7 @@ random.seed(46)
 
 # these values determine where features exported
 FEATURE_CSV_PATH = './features/features.csv'
-STANDARDIZATION_PARAMS_CSV_PATH = './features/standardization-parameters.csv'
+STANDARDIZATION_PARAMS_CSV_PATH = './features/standardization_parameters.csv'
 STANDARDIZE = True
 
 # these values determine where we get the meshes and their attributes, which we then use to normalize them

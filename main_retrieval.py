@@ -213,7 +213,7 @@ def run_query(mesh_path, k=5, scalar_weight = 0.5, verbose = False, exclude_self
 
 def predict_class(mesh_path, k=5, scalar_weight = 0.5, verbose = False):
     """Given a mesh path, return the most common class in the query results (if multiple most common classes, choose arbitrarily)."""
-    query_results = run_query(mesh_path, k=k, scalar_weight = scalar_weight, exclude_self = True)
+    query_results = run_query(mesh_path, k=k, scalar_weight = scalar_weight, exclude_self = True, verbose = verbose)
     labels = query_results[0]['category']
     prediction = Counter(labels).most_common(1)[0][0] # most common prediction label
     
