@@ -14,6 +14,8 @@ Discuss which are the types of shapes where your system performs best and, respe
 """
 import os
 import random
+
+import pandas
 import pandas as pd
 from main_retrieval import *
 from tqdm import tqdm
@@ -23,8 +25,83 @@ from matplotlib import pyplot as plt
 
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
+from tqdm import tqdm
 
-CLASSIFY_ALL_OBJECTS = True
+from database import Database
+
+
+class Evaluator:
+    metrics = {
+        'Precision': (lambda tp, fp, tn, fn: tp / (tp + fp)),
+        'Recall': (lambda tp, fp, tn, fn: tp / (tp + fn)),
+        'Specificity': (lambda tp, fp, tn, fn: tn / (tn + fp)),
+        'Accuracy': (lambda tp, fp, tn, fn: (tp + tn) / (tp + tn + fp + fn)),
+        'F_1': (
+            lambda tp, fp, tn, fn:
+                2 * Evaluator.metrics['Precision'](tp, fp, tn, fn) * Evaluator.metrics['Recall'](tp, fp, tn, fn) /
+                (Evaluator.metrics['Precision'](tp, fp, tn, fn) + Evaluator.metrics['Recall'](tp, fp, tn, fn))
+        )
+    }
+
+    def __init__(self, db: Database):
+        print('Performing evaluation...')
+
+        # Create a new dict for the data
+        data = {
+            'all': {}
+        }
+
+        # Loop over the entire database
+        with tqdm(total=len(db), unit="shapes", dynamic_ncols=True) as pbar:
+            for className, filename in db:
+                # Get the size of the database and the size of the class
+                d = len(db)
+                c = len(db.shapes[className])
+
+                # Query the shape
+                results, _ = run_query(os.path.join(db.path, className, filename), c)
+
+                # Calculate tp and fp
+                tp = len(results[results['category'] == className])
+                fp = len(results[results['category'] != className])
+
+                # Calculate the true and false negatives based on the database and class size
+                fn = c - tp
+                tn = d - c - fp
+
+                # Calculate and store all the metrics
+                for key, metric in self.metrics.items():
+                    if className not in data:
+                        data[className] = {}
+
+                    data['all'][key] = data[className][key] = metric(tp, fp, tn, fn)
+
+                pbar.update()
+
+        # Normalize the values
+        for metric in data['all']:
+            data['all'][metric] /= len(db)
+
+        for className in db.shapes:
+            for metric in data[className]:
+                data[className][metric] /= len(db.shapes[className])
+
+        self.data = pd.DataFrame.from_dict(data, orient='index')
+
+    def save(self, output: str):
+        # Create all needed dirs
+        if os.path.dirname(output):
+            os.makedirs(os.path.dirname(output), exist_ok=True)
+
+        # Write the data to a csv file
+        self.data.to_csv(output + '.csv', index=False, float_format='%.6f')
+
+        # Log that it is done
+        print('Output saved to', output + '.csv')
+
+
+
+CLASSIFY_ALL_OBJECTS = False
 
 """============PREDICT CLASS FOR EVERY OBJECT AND PLOT CONFUSION MATRIX==========="""
 
@@ -32,20 +109,20 @@ EVAL_OUTPUT = "evaluation"
 
 
 def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple"):
-    
+
     os.makedirs(EVAL_OUTPUT, exist_ok=True)
 
     k = 5
 
     features_df = pd.read_csv(FEATURES_CSV)
-    
+
     predicted_classes = []
     true_classes = []
-    
+
     all_paths = features_df["path"] # list of all paths to classify
     all_true_labels = features_df["category"]
 
-    
+
     for path, true_label in tqdm(zip(all_paths, all_true_labels)):
         predicted_classes += list(predict_class(path, scalar_weight = scalar_weight, k = k, return_format = prediction_type, verbose=False))
         if prediction_type == "multiple":
@@ -55,29 +132,29 @@ def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple")
 
     # create and plot confusion matrix as heat map
     cm = pd.crosstab(true_classes, predicted_classes, rownames = ['True'], colnames = ["Predicted"], margins = False)
- 
-    
+
+
     labels = list(set(true_classes+predicted_classes))
     precisions, recalls, f1s, _ = precision_recall_fscore_support(true_classes, predicted_classes, labels = labels)
     overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(true_classes, predicted_classes, labels = labels, average = "weighted")
     accuracy = accuracy_score(true_classes, predicted_classes)
-    
+
     #add overall scores
     labels.append("OVERALL")
     precisions = np.append(precisions, [overall_precision])
     recalls = np.append(recalls, [overall_recall])
     f1s = np.append(f1s, [overall_f1])
-                   
+
     for label, precision_score, recall_score, f1 in zip(labels, precisions, recalls, f1s):
         print(f"{label}: P = {precision_score}, R = {recall_score}")
-        
+
     pr_df = pd.DataFrame.from_dict({"True Label": labels,
                                     "Precision": precisions,
                                     "Recall": recalls,
                                     "F1": f1s})
-    
+
     pr_df.to_csv(os.path.join(EVAL_OUTPUT, f"precision_recall_scalar_weight_{scalar_weight}.csv"))
-    
+
     print(f"Overall accuracy: {accuracy} for scalar weight {scalar_weight}")
 
 
@@ -91,12 +168,12 @@ if __name__ == "__main__":
         scalar_weights = [0, 0.25, 0.5, 0.75, 1]
         for scalar_weight in scalar_weights:
             classify_eval_all_objects(scalar_weight = scalar_weight)
-        
-    
-    
-    
-    
-    
+
+
+    database = Database("psb-labeled-db", ['.off', '.ply', '.obj'])
+    Evaluator(database).save("metrics.csv")
+
+
 
 # # get attributes from a given query mesh
 # attributes = pd.read_csv("./attributes/normalized-PSB-attributes.csv")
