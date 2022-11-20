@@ -24,7 +24,8 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 
-CLASSIFY_ALL_OBJECTS = True
+CLASSIFY_ALL_OBJECTS = False
+GRAPH_PRECISION_RECALL = True
 
 """============PREDICT CLASS FOR EVERY OBJECT AND PLOT CONFUSION MATRIX==========="""
 
@@ -55,7 +56,9 @@ def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple")
 
     # create and plot confusion matrix as heat map
     cm = pd.crosstab(true_classes, predicted_classes, rownames = ['True'], colnames = ["Predicted"], margins = False)
- 
+    plt.figure(figsize=(15, 15))
+    sn.heatmap(cm, annot=True)
+    plt.savefig(os.path.join(EVAL_OUTPUT, f'confusion_matrix_scalar_weight_{scalar_weight}.pdf')) 
     
     labels = list(set(true_classes+predicted_classes))
     precisions, recalls, f1s, _ = precision_recall_fscore_support(true_classes, predicted_classes, labels = labels)
@@ -85,14 +88,44 @@ def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple")
 
 if __name__ == "__main__":
 
-
+    scalar_weights = [0, 0.25, 0.5, 0.75, 1]
+    
     if CLASSIFY_ALL_OBJECTS:
     # make prediction for EVERY object in the feature database
-        scalar_weights = [0, 0.25, 0.5, 0.75, 1]
+        
         for scalar_weight in scalar_weights:
             classify_eval_all_objects(scalar_weight = scalar_weight)
         
-    
+    if GRAPH_PRECISION_RECALL:
+        paths = ["./evaluation/precision_recall_scalar_weight_0.csv",
+        "./evaluation/precision_recall_scalar_weight_0.25.csv",
+        "./evaluation/precision_recall_scalar_weight_0.5.csv",
+        "./evaluation/precision_recall_scalar_weight_0.75.csv",
+        "./evaluation/precision_recall_scalar_weight_1.csv"]
+        
+        performance_data = {"Scalar Weight":[], "Precision":[], "Recall":[], "F1":[]}
+        
+        for sw, path in zip(scalar_weights, paths):
+            df = pd.read_csv(path)
+            df = df[df['True Label'] == "OVERALL"] # get overall data
+            
+            print(df)
+            
+            performance_data["Scalar Weight"].append(sw)
+            performance_data["Precision"].append(float(df['Precision']))
+            performance_data["Recall"].append(float(df['Recall']))
+            performance_data["F1"].append(float(df['F1']))
+            
+        performance_df = pd.DataFrame.from_dict(performance_data)
+        performance_df.plot(x="Scalar Weight", fontsize = 50)
+        plt.legend(prop={'size': 50})
+        plt.xlabel("Scalar Weight", fontsize = 40)
+        performance_df.to_csv(os.path.join("evaluation", "precision_recall_overall.csv"))
+        plt.savefig(os.path.join("evaluation", "precision_recall_scalar_weight.pdf"))
+            
+            
+            
+        
     
     
     

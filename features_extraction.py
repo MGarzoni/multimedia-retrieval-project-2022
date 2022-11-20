@@ -462,8 +462,8 @@ if __name__ == "__main__":
 
     """============EXTRACT FEATURES FROM DATABASE=========="""
 
-    EXTRACT = False
-    REPORT = True
+    EXTRACT = True
+    REPORT = False
 
     if EXTRACT:
         extract_features_db(NORM_MESHES_PATH, 
