@@ -29,7 +29,8 @@ from tqdm import tqdm
 
 CLASSIFY_ALL_OBJECTS = False
 GRAPH_PRECISION_RECALL = True
-=======
+
+
 from database import Database
 
 
@@ -208,10 +209,6 @@ if __name__ == "__main__":
         
     
     
-    
-    
-=======
-
 
     database = Database("psb-labeled-db", ['.off', '.ply', '.obj'])
     Evaluator(database).save("metrics.csv")
