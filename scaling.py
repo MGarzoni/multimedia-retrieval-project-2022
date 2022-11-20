@@ -26,7 +26,7 @@ class ANNIndex:
     def query(self, features: List[float], k: int = 5):
         indices, distances = self.annoy.get_nns_by_vector(features, k, include_distances=True)
 
-        data = self.data[self.data.index.isin(indices)][['path']]
+        data = self.data[self.data.index.isin(indices)][['path', 'category']]
         data['dist'] = distances
 
         return data

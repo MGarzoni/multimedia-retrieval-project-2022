@@ -2,6 +2,8 @@ import os
 import trimesh
 import numpy as np
 import pandas as pd
+
+import scaling
 from utils import *
 import copy
 from features_extraction import *
@@ -213,8 +215,20 @@ def run_query(mesh_path, k=5, scalar_weight = 0.5, verbose = False, exclude_self
 
 def predict_class(mesh_path, k=5, scalar_weight = 0.5, return_format = "multiple", method = "distance_query", verbose = False):
     """Given a mesh path, return the most common class in the query results (if multiple most common classes, choose arbitrarily)."""
-    query_results = run_query(mesh_path, k=k, scalar_weight = scalar_weight, exclude_self = True, verbose = verbose)
-    labels = query_results[0]['category']
+    if method == 'distance_query':
+        query_results = run_query(mesh_path, k=k, scalar_weight = scalar_weight, exclude_self = True, verbose = verbose)
+        labels = query_results[0]['category']
+    else:
+        idx = scaling.ANNIndex(pd.read_csv(FEATURES_CSV))
+
+        norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
+        query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename=os.path.basename(mesh_path),
+                                       verbose=True)
+
+        columns = [c for c in query_feats.columns if any(f in c for f in scaling.ANNIndex.features)]
+
+        top_matches = idx.query(list(query_feats[columns].iloc[0]), k)
+        labels = top_matches['category']
     
     if return_format == "multiple": # we want to return labels of all predictions
         return labels

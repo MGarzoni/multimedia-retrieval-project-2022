@@ -15,3 +15,6 @@ def open_and_display_mesh(db_path):
     # load and display mesh
     mesh = trimesh.load(os.path.join(db_path, rand_cat, rand_ent))
     return mesh.show(viewer='gl')
+
+if __name__ == '__main__':
+    open_and_display_mesh('psb-labeled-db/')

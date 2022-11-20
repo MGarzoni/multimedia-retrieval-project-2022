@@ -27,8 +27,8 @@ from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 from tqdm import tqdm
 
-CLASSIFY_ALL_OBJECTS = False
-GRAPH_PRECISION_RECALL = True
+CLASSIFY_ALL_OBJECTS = True
+GRAPH_PRECISION_RECALL = False
 
 
 from database import Database
@@ -105,14 +105,14 @@ class Evaluator:
 
 
 
-CLASSIFY_ALL_OBJECTS = False
+CLASSIFY_ALL_OBJECTS = True
 
 """============PREDICT CLASS FOR EVERY OBJECT AND PLOT CONFUSION MATRIX==========="""
 
 EVAL_OUTPUT = "evaluation"
 
 
-def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple"):
+def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple", method="distance_query"):
 
     os.makedirs(EVAL_OUTPUT, exist_ok=True)
 
@@ -128,7 +128,7 @@ def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple")
 
 
     for path, true_label in tqdm(zip(all_paths, all_true_labels)):
-        predicted_classes += list(predict_class(path, scalar_weight = scalar_weight, k = k, return_format = prediction_type, verbose=False))
+        predicted_classes += list(predict_class(path, scalar_weight = scalar_weight, k = k, return_format = prediction_type, method=method, verbose=False))
         if prediction_type == "multiple":
             true_classes += k*[true_label]
         elif prediction_type == "majority":
@@ -138,7 +138,7 @@ def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple")
     cm = pd.crosstab(true_classes, predicted_classes, rownames = ['True'], colnames = ["Predicted"], margins = False)
     plt.figure(figsize=(15, 15))
     sn.heatmap(cm, annot=True)
-    plt.savefig(os.path.join(EVAL_OUTPUT, f'confusion_matrix_scalar_weight_{scalar_weight}.pdf')) 
+    plt.savefig(os.path.join(EVAL_OUTPUT, f'confusion_matrix_scalar_weight_{scalar_weight}_{method}.pdf'))
     
 
     labels = list(set(true_classes+predicted_classes))
@@ -160,7 +160,7 @@ def classify_eval_all_objects(scalar_weight = 0.5, prediction_type = "multiple")
                                     "Recall": recalls,
                                     "F1": f1s})
 
-    pr_df.to_csv(os.path.join(EVAL_OUTPUT, f"precision_recall_scalar_weight_{scalar_weight}.csv"))
+    pr_df.to_csv(os.path.join(EVAL_OUTPUT, f"precision_recall_scalar_weight_{scalar_weight}_{method}.csv"))
 
     print(f"Overall accuracy: {accuracy} for scalar weight {scalar_weight}")
 
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     # make prediction for EVERY object in the feature database
         
         for scalar_weight in scalar_weights:
-            classify_eval_all_objects(scalar_weight = scalar_weight)
+            classify_eval_all_objects(scalar_weight = scalar_weight, method="ann")
         
     if GRAPH_PRECISION_RECALL:
         paths = ["./evaluation/precision_recall_scalar_weight_0.csv",
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     
     
 
-    database = Database("psb-labeled-db", ['.off', '.ply', '.obj'])
-    Evaluator(database).save("metrics.csv")
+    # database = Database("psb-labeled-db", ['.off', '.ply', '.obj'])
+    # Evaluator(database).save("metrics.csv")
 
 
