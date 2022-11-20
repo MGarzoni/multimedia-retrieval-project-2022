@@ -3,9 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from features_extraction import HIST_FEATURE_RANGES, BINS
 
 
-class ShapeReport:
+class ShapeReport: # this is for ATTRIBUTES rather than features
     def __init__(self, data: pd.DataFrame, given_ranges=None):  # histograms can be PRE defined!
         self.columns = [
             "num_faces",
@@ -83,33 +84,37 @@ class FeatureReport:
     config = {
         'a3': {
             'title': 'a3, $shape_class',
-            'range': (0, math.pi)
+            'range': HIST_FEATURE_RANGES["a3"]
         },
         'd1': {
             'title': 'd1, $shape_class',
-            'range': (0, math.sqrt(3))
+            'range': HIST_FEATURE_RANGES["d1"]
         },
         'd2': {
             'title': 'd2, $shape_class',
-            'range': (0, math.sqrt(3))
+            'range': HIST_FEATURE_RANGES["d2"]
         },
         'd3': {
             'title': 'd3, $shape_class',
-            'range': (0, 0.85)
+            'range': HIST_FEATURE_RANGES["d3"]
         },
         'd4': {
             'title': 'd4, $shape_class',
-            'range': (0, 1.0)
+            'range': HIST_FEATURE_RANGES["d4"]
         }
     }
 
-    def __init__(self, data: pd.DataFrame):
+    def __init__(self, data: pd.DataFrame, histranges = "default"):
         print('Generating features report...')
 
         # No data processing needed
         self.data = data
+        
+        if histranges == "0_1": # set all ranges to 0, 1
+            for key in self.config.keys():
+                self.config[key]["range"] = (0, 1)
 
-    def save(self, output: str, group: bool = False):
+    def save(self, output: str, graph_type: str = "split"):
         # Create all needed dirs
         os.makedirs(output, exist_ok=True)
 
@@ -117,9 +122,20 @@ class FeatureReport:
         for key in self.config:
             # Get all the shape classes
             shape_classes = self.data['category'].unique()
+            
+            # Recalculate the bins
+            bins = np.linspace(self.config[key]['range'][0],
+                               self.config[key]['range'][1],
+                               BINS + 1)
+            
+            # width of each bin (useful for stepwise plotting, finding midpoints, etc)
+            bin_w = abs(self.config[key]['range'][1] - self.config[key]['range'][0])/BINS
+                               
+            
+            bin_locations = bins[:-1] # find locations of bins. this is where values will be plotted
 
             # Check if group plots must be generated
-            if group:
+            if graph_type == "group":
                 fig, axes = plt.subplots(nrows=math.ceil(len(shape_classes) / 4), ncols=4)
 
                 for i, ax in enumerate(axes.flatten()):
@@ -133,14 +149,11 @@ class FeatureReport:
                     # Get all faeture values matching the feature name (so all the bins of the feature)
                     shape_features = self.data[self.data['category'] == shape_class].filter(like=key, axis=1)
 
-                    # Recalculate the bins
-                    bins = np.linspace(self.config[key]['range'][0],
-                                       self.config[key]['range'][1],
-                                       len(shape_features.columns) + 1)
+                    
 
                     # Generate all the plots
                     for _, shape_feature in shape_features.iterrows():
-                        ax.plot(bins[:-1], shape_feature)
+                        ax.plot(bin_locations, shape_feature)
 
                     # Update the axes and limits
                     ax.set_title(self.config[key]['title'].replace('$shape_class', shape_class), 
@@ -151,22 +164,31 @@ class FeatureReport:
 
                 # Save the combined plots
                 fig.savefig(os.path.join(output, key + '.pdf'))
-            else:
+            elif graph_type == "split": # not group plots but individual plots per group
+                fig, axes = plt.subplots()
                 for shape_class in shape_classes:
                     # Get the features
                     shape_features = self.data[self.data['category'] == shape_class].filter(like=key, axis=1)
 
-                    # Recalculate the bins
-                    bins = np.linspace(self.config[key]['range'][0],
-                                       self.config[key]['range'][1],
-                                       len(shape_features.columns) + 1)
-
                     # Generate all the plots
                     for _, shape_feature in shape_features.iterrows():
-                        plt.plot(bins[:-1], shape_feature)
+                        plt.plot(bin_locations, shape_feature)
 
                     # Update the axes and limits
                     plt.title(self.config[key]['title'].replace('$shape_class', shape_class))
                     plt.xlim(self.config[key]['range'])
                     plt.savefig(os.path.join(output, shape_class + '_' + key + '.pdf'))
                     plt.close()
+            elif graph_type == "all_together": #plot all shapes together for this feature histogram
+                fig, axes = plt.subplots()
+                shape_features = self.data.filter(like=key, axis=1) #isolate the columns corresponding to the feature in question
+
+                # Generate all the plots
+                for _, shape_feature in shape_features.iterrows():
+                    plt.plot(bin_locations, shape_feature)
+
+                # Update the axes and limits
+                plt.title(self.config[key]['title'].replace('$shape_class', "All Shapes"))
+                plt.xlim(self.config[key]['range'])
+                plt.savefig(os.path.join(output,  "allshapes_" + key + '.pdf'))
+                plt.close() 

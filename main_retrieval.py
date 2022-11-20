@@ -112,7 +112,7 @@ def extract_features(norm_mesh, norm_mesh_attributes, filename = None, verbose =
     # (these are assumed to be consistent)
 
     scalar_features = extract_scalar_features_single_mesh(norm_mesh, standardization_parameters_csv=STANDARDIZATION_CSV) # this returns a dict of features for the mesh
-    for key, value in scalar_features.items(): # append the new values to the scalar_features dictionary lists
+    for key, value in scalar_features.items(): # add the new values to the scalar_features dictionary 
         features[key] = (value)
 
     # calcualte the histograms for each feature as a dictionary
@@ -153,7 +153,7 @@ def compute_distances(query_feats, db_feats, verbose = False):
     # define main distances dict holding required information
     distances = {'path': [path for path in db_feats['path']], 'category':db_feats['category'], 'hist_dist': [], "scalar_dist":[]}
 
-    # compute cosine distances on scalar features of query shape to the rest of shapes
+    # compute euclidian distances on scalar features of query shape to the rest of shapes
     for i in range(len(db_feats[scalar_labels])):
         target_scalar_vec = db_scalar_copy.loc[i]
         dist = round(euclidean_distance(query_scalar_copy, target_scalar_vec), 4)
@@ -179,8 +179,9 @@ def run_query(mesh_path, k=5, scalar_weight = 0.5, verbose = False, exclude_self
     
     
     norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(mesh_path)
+    if verbose: print("NORM QUERY ATTRIBUTES:", norm_mesh_attributes)
     query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename = os.path.basename(mesh_path), verbose = False)
-    if verbose: print("QUERY FEATURES", query_feats.to_dict())
+    if verbose: print("QUERY FEATURES", query_feats)
     
     # GET FEATURE VECTORS FROM ALL NORMALIZED DB
     db_feats = pd.read_csv(FEATURES_CSV)

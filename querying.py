@@ -37,7 +37,8 @@ layout1 = [
      sg.FileBrowse('Select', file_types=(('Mesh files', '.off .ply .obj'),), target='-file-')],
     [sg.Text('Preview', size=(15, 1), visible=False, key="Preview"), sg.Image(key='-preview-', visible=False, )],
     [sg.Text('Result count', size=(15, 1)), sg.InputText('5', key='-k-', enable_events=True)],
-    [sg.Checkbox('Use ANN', key='-ann-', default=True)],
+    [sg.Text('Scalar weight', size=(15, 1)), sg.InputText('0.5', key='-sw-', enable_events=True)],
+    [sg.Checkbox('Use ANN (ignores scalar weight)', key='-ann-', default=False)],
     [sg.Button('3D viewer', disabled=True), sg.Button('Query', disabled=True)],
 ]
 
@@ -78,8 +79,8 @@ while True:
 
     if event == "Query":
         if values['-ann-']:
-            FEATURE_CSV_PATH = './features/reduced-db-features-ORIGINAL-standardized.csv'
-            idx = ANNIndex(pd.read_csv(FEATURE_CSV_PATH))
+            print("ann")
+            idx = ANNIndex(pd.read_csv(FEATURES_CSV))
 
             norm_mesh, norm_mesh_attributes = normalize_mesh_from_path(values["-file-"])
             query_feats = extract_features(norm_mesh, norm_mesh_attributes, filename=os.path.basename(values["-file-"]),
@@ -91,6 +92,7 @@ while True:
         else:
             # run the query and get matches
             top_matches, _ = run_query(values["-file-"], k=int(values['-k-']),
+                                       scalar_weight = float(values['-sw-']),
                                        verbose=True)
 
         # open second window to display the results

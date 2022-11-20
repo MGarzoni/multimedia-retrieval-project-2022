@@ -9,8 +9,7 @@ import seaborn as sns
 import random
 from matplotlib import pyplot as plt
 
-import reporting
-from utils import *
+
 from collections import defaultdict
 from tqdm import tqdm
 
@@ -20,45 +19,57 @@ SAMPLE_N = 2000 # nr random samples taken for each distributional feature
 BINS = 10
 random.seed(46)
 
-# these values determine where it is exported
+# these values determine where features exported
 FEATURE_CSV_PATH = './features/features.csv'
 STANDARDIZATION_PARAMS_CSV_PATH = './features/standardization-parameters.csv'
 STANDARDIZE = True
 
 # these values determine where we get the meshes and their attributes, which we then use to normalize them
-NORM_MESHES_PATH = "./reduced-normalized-psb-db/"
-NORM_ATTRIBUTES_CSV_PATH = "./attributes/reduced-normalized-PSB-attributes.csv"
+NORM_MESHES_PATH = "./normalized-psb-db/"
+NORM_ATTRIBUTES_CSV_PATH = "./attributes/normalized-PSB-attributes.csv"
+
+HIST_FEATURE_RANGES = {"a3":(0, math.pi), 
+                   "d1":(0, 1), 
+                   "d2":(0, 1.4),
+                   "d3":(0, 0.7), 
+                   "d4":(0, 0.5)}
+
+import reporting
+from utils import *
 
 
 
 def get_diameter(mesh, method="fast"):
     '''given a mesh, get the furthest points on the convex haul and then try all possible combinations
     of the distances between points and return the max one'''
-
-    # convex_hull = mesh.convex_hull
-    # max_dist = 0
-    # vertices = list(convex_hull.vertices)
-    #
-    #
-    # if method == "fast": # if fast method, REDUCE nr vertices
-    #     """THIS CODE IS NOT THE RIGHT APPROACH JUST FASTER BY SAMPLING 100 POINTS"""
-    #
-    #     if len(vertices) > 100:
-    #         vertices = random.sample(vertices, 100)
-    #
-    # if method == "slow":
-    #     pass
-    #
-    # for i in range(len(vertices)):
-    #     for j in range(i, len(vertices)):
-    #         dist = np.linalg.norm(vertices[i] - vertices[j])
-    #         if dist > max_dist:
-    #             max_dist = dist
-    #
-    # return max_dist
-
+    
     # This does basically the same as the code above but using some kind of splitting algorithm to make the lookup faster
-    return trimesh.nsphere.minimum_nsphere(mesh)[1] * 2
+    if method == "nsphere":
+        return trimesh.nsphere.minimum_nsphere(mesh)[1] * 2 
+
+    convex_hull = mesh.convex_hull
+    max_dist = 0
+    vertices = list(convex_hull.vertices)
+    
+    if method == "fast": # if fast method, REDUCE nr vertices
+        """SAMPLE 200 VERTICES"""
+    
+        if len(vertices) > 200:
+            vertices = random.sample(vertices, 200)
+    
+    if method == "slow": # do nothing, just calculate between all pairs
+        pass
+    
+    # find maximum distance between two vertices
+    for i in range(len(vertices)):
+        for j in range(i, len(vertices)):
+            dist = np.linalg.norm(vertices[i] - vertices[j])
+            if dist > max_dist:
+                max_dist = dist
+    
+    return max_dist
+
+    
 
 def get_eccentricity(mesh):
     '''same as for alignment: given a mesh, get the covariance matrix of the vertices, get eigens
@@ -87,33 +98,29 @@ def calculate_a3(mesh, seed = 42):
     return the angles between every 3 vertices'''
 
     random.seed(seed)
-        
-    vertices = list(mesh.vertices)
     
+    vertices = list(mesh.vertices)
+
     # generatre N trios of vertices (could be repeats)
     trios = [random.sample(vertices, 3) for i in range(SAMPLE_N)]
 
-    sqr_areas = []
+    results = []
 
     for trio in trios:
 
         # three points
-        p1, p2, p3 = trio
+        a, b, c = trio
         
         # create two vectors defining the triangle
-        a = p2- p1
-        b = p3 - p1
+        ab = b-a
+        ac = c-a
+        
+        cosine_angle = np.dot(ab, ac) / (np.linalg.norm(ab) * np.linalg.norm(ac))
+        angle = np.arccos(cosine_angle)
                 
-        # calculate cross product to get area
-        cross_pr = np.cross(a, b)
+        results.append(angle)
         
-        # magnitude of cross product / 2 = triangle area
-        area = 0.5 * hypot(cross_pr[0], cross_pr[1], cross_pr[2])
-        
-        # square root of area added to results
-        sqr_areas.append(sqrt(area))
-        
-    return normalized_histogram_no_bins(sqr_areas, range=(0, math.pi))
+    return normalized_histogram_no_bins(results, range = HIST_FEATURE_RANGES["a3"])
 
 def calculate_d1(mesh, seed = 43):
     '''given a mesh, return density histogrma of distances between barycenter and SAMPLE_N vertices
@@ -134,7 +141,7 @@ def calculate_d1(mesh, seed = 43):
         result = float(np.sqrt(np.sum(np.square(vertex - center))))
         results.append(result)
     
-    return normalized_histogram_no_bins(results, range = (0, 1.73))
+    return normalized_histogram_no_bins(results, range = HIST_FEATURE_RANGES["d1"])
 
 def calculate_d2(mesh, seed = 44):
     '''given a mesh, return hist of distances between SAMPLE_N pairs of vertices
@@ -153,7 +160,7 @@ def calculate_d2(mesh, seed = 44):
                for pair in pairs]
     
     
-    return normalized_histogram_no_bins(distances, range = (0, 1.73))
+    return normalized_histogram_no_bins(distances, range = HIST_FEATURE_RANGES["d2"])
 
 def calculate_d3(mesh, seed = 45):
     '''given a mesh, return the square roots of areas of SAMPLE_N triangles
@@ -189,7 +196,7 @@ def calculate_d3(mesh, seed = 45):
         # square root of area added to results
         sqr_areas.append(sqrt(area))
 
-    return normalized_histogram_no_bins(sqr_areas, range=(0, 0.85))
+    return normalized_histogram_no_bins(sqr_areas, range = HIST_FEATURE_RANGES["d3"])
 
 def calculate_d4(mesh, seed = 46):
     '''given a mesh, return the cube roots of volume of 
@@ -208,7 +215,7 @@ def calculate_d4(mesh, seed = 46):
         volume = (1/6) * abs(np.linalg.det((p1-p4, p2-p4, p3-p4))) # formula from Wikipedia
         results.append(np.cbrt(volume)) # add cubic root of volume to results
     
-    return normalized_histogram_no_bins(results, range = (0, 1))
+    return normalized_histogram_no_bins(results, range = HIST_FEATURE_RANGES["d4"])
 
 '''FEATURE EXTRACTION'''
 
@@ -456,7 +463,7 @@ if __name__ == "__main__":
     """============EXTRACT FEATURES FROM DATABASE=========="""
 
     EXTRACT = False
-    REPORT = False
+    REPORT = True
 
     if EXTRACT:
         extract_features_db(NORM_MESHES_PATH, 
@@ -469,8 +476,9 @@ if __name__ == "__main__":
     if REPORT:
         feat_hist = pd.read_csv(FEATURE_CSV_PATH)
         report = reporting.FeatureReport(feat_hist)
-        report.save('feature_plots')
-        report.save('feature_plots_grouped', True)
+        report.save('feature_plots', graph_type = "split")
+        report.save('feature_plots_grouped', graph_type = "group")
+        report.save('feature_plots_allshapes', graph_type = "all_together")
         
 
 

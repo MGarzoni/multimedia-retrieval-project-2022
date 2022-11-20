@@ -35,7 +35,7 @@ if CLASSIFY_ALL_OBJECTS:
 
     # create and plot confusion matrix as heat map
     cm = pd.crosstab(true_classes, predicted_classes, rownames = ['True'], colnames = ["Predicted"], margins = False)
-    cm.to_csv("confusion_matrix.csv")
+    # cm.to_csv("confusion_matrix.csv")
     sn.heatmap(cm, annot=True)
 
 # get attributes from a given query mesh
