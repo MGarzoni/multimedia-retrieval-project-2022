@@ -160,7 +160,11 @@ class FeatureReport:
                                  fontsize=8,
                                  y=1.0, pad=-14)
                     
-                    ax.set_xlim(self.config[key]['range'])
+                    #ax.set_xlim(None)
+                    ax.set_xticks([], [])
+                    ax.set_yticks([], [])
+                    plt.savefig(os.path.join(output, key + '.pdf'))
+                    plt.close()
 
                 # Save the combined plots
                 fig.savefig(os.path.join(output, key + '.pdf'))
