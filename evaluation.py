@@ -30,7 +30,7 @@ if CLASSIFY_ALL_OBJECTS:
 # make prediction for EVERY object in the feature database
     features_df = pd.read_csv(FEATURES_CSV)
     all_paths = features_df["path"] # list of all paths to classify
-    predicted_classes = [predict_class(path, scalar_weight = 1, verbose=True) for path in tqdm(all_paths)]
+    predicted_classes = [predict_class(path, scalar_weight = 1, verbose=False) for path in tqdm(all_paths)]
     true_classes = features_df["category"]
 
     # create and plot confusion matrix as heat map
